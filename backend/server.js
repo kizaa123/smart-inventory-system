@@ -5,6 +5,7 @@ const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 5501;
+app.listen(PORT);
 
 // Middleware
 app.use(cors());
