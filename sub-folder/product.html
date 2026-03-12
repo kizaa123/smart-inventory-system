@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../auth-guard.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="../api-client.js"></script>
+    <title>Product-management</title>
+</head>
+<body>
+
+  <div class="layout">
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <!-- the navigation bar-->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="sidebar-header"><i class="fa-solid fa-boxes-stacked"></i><span>Stockmaster</span></div>
+
+      <ul class="nav-list">
+        <li class="nav-item"><a href="../index.html"><span><i class="fa-solid fa-gauge"></i></span><span class="nav-text">Dashboard</span></a></li>
+        <li class="nav-item"><a href="product.html" class="active"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+
+        <!-- the navigation logout buttun -->
+        <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </ul>
+    </nav>
+
+    <!-- Main Content – page for the website-->
+    <main class="main-content">
+     <div class="header">
+         <h1><i class="fa-solid fa-box"></i> Inventory</h1>
+      <button onclick="togglePopup()"><i class="fa-solid fa-plus"></i> Add Product</button>
+     </div>
+     <div class="searchbar">
+      <button style="border-radius: 7px 0 0  7px;">search</button>
+      <input type="search" placeholder="search item here......">
+      <button style="border-radius: 0 7px 7px 0;" id="filterBtn"><i class="fa-solid fa-filter"></i> Filter</button>
+      <div id="filterMenu" class="filter-menu">
+        <button onclick="sortData('asc')"><i class="fa-solid fa-sort-alpha-down"></i> A - Z</button>
+        <button onclick="sortData('desc')"><i class="fa-solid fa-sort-alpha-up"></i> Z - A</button>
+      </div>
+     </div>
+        <section>
+          <!-- the product table with borders -->
+        <table>
+            <thead>
+               <tr class="icon">
+                  <th><i class="fa-solid fa-list"></i> Product List</th>
+                  <th><i class="fa-solid fa-tag"></i> Barcode</th>
+                  <th>Product Name</th>
+                  <th><i class="fa-solid fa-layer-group"></i> Catogorie</th>
+                  <th><i class="fa-solid fa-sack-dollar"> </i>Price (GH<i class="fa-solid fa-cedi-sign"></i>)</th>
+                  <th><i class="fa-solid fa-list-ol"></i> Stock</th>
+                  <th><i class="fa-solid fa-pen-clip"></i> Action</th>
+               </tr>
+            </thead>
+            <tbody>
+               <!-- Products loaded from API -->
+            </tbody>
+        </table>
+    </section>
+    <!-- the popup part and content -->
+    <div id="backdrop" onclick="closePopup()"></div>
+     <div id="popup">
+      <div class="popup-content" id="content2">
+         <h3>Edit Product Details</h3>
+        <div class="product-form">
+              <div class="bar-proName">
+                  <div class="productName" style="width: 100%;">
+                  <label for="editName" style="margin-bottom: 10px;">Product Name</label><br>
+                  <input type="text" id="editName" placeholder="Product Name">
+                 </div>
+              </div>
+              <div class="image-upload" style="margin-bottom: 15px;">
+                  <label for="editImage" style="display:block; margin-bottom: 5px;">Product Image</label>
+                  <input type="file" id="editImage" accept="image/*" style="width: 100%; border: 1px solid #ddd; padding: 10px; border-radius: 5px; outline: none; background: white;">
+              </div>
+
+               <div class="ctg-supply">
+                <div class="catgo">
+                  <label for="editCategory">Category</label><br>
+                 <select id="editCategory">
+                  <option value="">Select Category</option>
+                 </select>
+                </div>
+                <div class="supplire">
+                  <label for="editSupplier">Supplier</label><br>
+                  <select id="editSupplier">
+                  <option value="">Select Supplier</option>
+                 </select>
+                </div>
+              </div>
+              <div class="cost-sellStock">
+                <div class="cost">
+                  <label for="editCost">Cost Price</label><br>
+                  <input type="number" id="editCost" min="1">
+                </div>
+                <div class="sell">
+                  <label for="editSell">Sell Price</label><br>
+                  <input type="number" id="editSell" min="1">
+                </div>
+                <div class="stock">
+                  <label for="editStock">Stock</label><br>
+                  <input type="number" id="editStock" min="1">
+                </div>
+              </div>
+              <button  onclick="updateProduct()" id="saveProduct">Save Edit</button>
+            </div>
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <div class="popup-content" id="content1">
+            <h2>New Product</h2>
+            <div class="product-form">
+              <div class="bar-proName">
+                <div class="barcode">
+                  <label for="barcode">Barcode</label><br>
+                  <input type="text" id="barcode" placeholder="#WA-0000">
+                  <button type="button" onclick="generateRandomBarcode(this)"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+
+                  <div class="productName">
+                  <label for="addName">Product Name</label><br>
+                  <input type="text" id="addName" placeholder="Product Name">
+                </div>
+              </div>
+
+               <div class="image-upload" style="margin-bottom: 15px;">
+                  <label for="addImage" style="display:block; margin-bottom: 5px;">Product Image</label>
+                  <input type="file" id="addImage" accept="image/*" style="width: 100%; border: 1px solid #ddd; padding: 10px; border-radius: 5px; outline: none; background: white;">
+              </div>
+
+               <div class="ctg-supply">
+                <div class="catgo">
+                  <label for="addCategory">Category</label><br>
+                 <select id="addCategory">
+                  <option value="">Select Category</option>
+                 </select>
+                </div>
+                <div class="supplire">
+                  <label for="addSupplier">Supplier</label><br>
+                  <select id="addSupplier">
+                  <option value="">Select Supplier</option>
+                 </select>
+                </div>
+              </div>
+              <div class="cost-sellStock">
+                <div class="cost">
+                  <label for="addCost">Cost Price</label><br>
+                  <input type="number" id="addCost" min="1">
+                </div>
+                <div class="sell">
+                  <label for="addSell">Sell Price</label><br>
+                  <input type="number" id="addSell" min="1">
+                </div>
+                <div class="stock">
+                  <label for="addStock">Stock</label><br>
+                  <input type="number" id="addStock" min="1">
+                </div>
+              </div>
+              <button type="button" onclick="saveProduct()" id="saveProduct">Save Product</button>
+             </div> 
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+    
+
+    </main> 
+  <script src="../index.js"></script>
+  <script src="../product-api.js"></script>
+</body>
+</html>

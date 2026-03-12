@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../auth-guard.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <title>Product-Suppliers</title>
+</head>
+<body>
+
+  <div class="layout">
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <!-- the navigation bar-->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="sidebar-header"><i class="fa-solid fa-boxes-stacked"></i><span>Stockmaster</span></div>
+
+      <ul class="nav-list">
+        <li class="nav-item"><a href="../index.html"><span><i class="fa-solid fa-gauge"></i></span><span class="nav-text">Dashboard</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/product.html"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
+        <li class="nav-item"><a href="suppliers.html" class="active"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+
+        <!-- the navigation logout buttun -->
+        <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </ul>
+    </nav>
+
+    <!-- Main Content – page for the website-->
+    <main class="main-content">
+     <div class="header">
+         <h1><i class="fa-regular fa-truck"></i> Suppliers</h1>
+      <button onclick="togglePopup()"><i class="fa-solid fa-plus"></i> Add Supplier</button>
+     </div>
+     <div class="searchbar">
+      <button style="border-radius: 7px 0 0  7px;">search</button>
+      <input type="search" placeholder="search item here......">
+      <button style="border-radius: 0 7px 7px 0;" id="filterBtn"><i class="fa-solid fa-filter"></i> Filter</button>
+      <div id="filterMenu" class="filter-menu">
+        <button onclick="sortData('asc')"><i class="fa-solid fa-sort-alpha-down"></i> A - Z</button>
+        <button onclick="sortData('desc')"><i class="fa-solid fa-sort-alpha-up"></i> Z - A</button>
+      </div>
+     </div>
+        <section>
+          <!-- the product table with borders -->
+        <table class="supplire-table">
+            <thead>
+               <tr class="icon">
+                  <th><i class="fa-solid fa-user"></i> Name</th>
+                  <th><i class="fa-solid fa-person"></i> Contact Person</th>
+                  <th><i class="fa-solid fa-envelope"></i> Email</th>
+                  <th><i class="fa-solid fa-phone"></i> Phone</th>
+                  <th><i class="fa-solid fa-location-dot"></i> Address</th>
+                  <th><i class="fa-solid fa-pen-clip"></i> Action</th>
+               </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </section>
+    <!-- the popup part and content -->
+    <div id="backdrop" onclick="closePopup()"></div>
+     <div id="popup">
+      <div class="popup-content" id="content2">
+         <h3>Edit Supplier Details</h3>
+        <div class="product-form">
+              <div class="bar-proName">
+                <div class="barcode" style="width: 90%;">
+                  <label for="editName">Supplier Name</label><br>
+                  <input type="text" id="editName" placeholder="Supplier name">
+                </div>
+
+                  <div class="productName">
+                  <label for="editContact">Contact Person</label><br>
+                  <input type="text" id="editContact" placeholder="Contact name">
+                </div>
+              </div>
+
+               <div class="ctg-supply">
+                <div class="catgo">
+                  <label for="editEmail">Email</label><br>
+                  <input type="email" id="editEmail" placeholder="Email address">
+                </div>
+                <div class="supplire">
+                  <label for="editPhone">Phone</label><br>
+                  <input type="text" id="editPhone" placeholder="Phone number">
+                </div>
+              </div>
+              <div class="cost-sellStock">
+                <div class="cost" style="width: 100%;">
+                  <label for="editAddress">Address</label><br>
+                  <input type="text" id="editAddress" placeholder="Address">
+                </div>
+              </div>
+              <button id="saveProduct" onclick="updateSupplier()">Save Changes</button>
+            </div>
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+        <div class="popup-content" id="content1">
+            <h2>New Supplier</h2>
+            <div class="product-form">
+              <div class="bar-proName">
+                <div class="barcode" style="width: 90%;">
+                  <label for="addName">Supplier Name</label><br>
+                  <input type="text" id="addName" placeholder="Supplier name">
+                </div>
+
+                  <div class="productName">
+                  <label for="addContact">Contact Person</label><br>
+                  <input type="text" id="addContact" placeholder="Contact name">
+                </div>
+              </div>
+
+               <div class="ctg-supply">
+                <div class="catgo">
+                  <label for="addEmail">Email</label><br>
+                  <input type="email" id="addEmail" placeholder="Email address">
+                </div>
+                <div class="supplire">
+                  <label for="addPhone">Phone</label><br>
+                  <input type="text" id="addPhone" placeholder="Phone number">
+                </div>
+              </div>
+              <div class="cost-sellStock">
+                <div class="cost" style="width: 100%;">
+                  <label for="addAddress">Address</label><br>
+                  <input type="text" id="addAddress" placeholder="Address">
+                </div>
+              </div>
+              <button id="saveProduct" onclick="saveSupplier()">Save Supplier</button>
+             </div> 
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
+    </main> 
+  <script src="../api-client.js"></script>
+  <script src="../index.js"></script>
+  <script src="../suppliers-api.js"></script>
+</body>
+</html>

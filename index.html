@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="auth-guard.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <title>Dashboar-management</title>
+</head>
+<body>
+
+  <div class="layout">
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <!-- the navigation bar-->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="sidebar-header"><i class="fa-solid fa-boxes-stacked"></i><span>Stockmaster</span></div>
+
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="active"><span><i class="fa-solid fa-gauge"></i></span><span class="nav-text">Dashboard</span></a></li>
+        <li class="nav-item"><a href="./sub-folder/product.html"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
+        <li class="nav-item"><a href="./sub-folder/categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
+        <li class="nav-item"><a href="./sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
+        <li class="nav-item"><a href="./sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
+        <li class="nav-item"><a href="sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+
+        <!-- the navigation logout buttun -->
+        <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </ul>
+    </nav>
+
+    <!-- Main Content – page for the website-->
+    <main class="main-content">
+     <div class="header">
+       <h1><i class="fa-solid fa-gauge"></i> Dashboard Overview</h1>
+     </div> 
+      <h5>Welcome back, system Admin!</h5>
+
+      <!-- the overview of the manament system -->
+       <section>
+        
+          <div class="overview-content">
+             <div class="total" style="background-color: rgb(1, 34, 219);">
+                    <i class="fa-solid fa-cart-arrow-down"></i>
+                    <h2>Today's Sale <br> <span id="dash-todays-sales">GH<i class="fa-solid fa-cedi-sign"></i>0.00</span></h2>
+               </div>
+              <div class="total" style="background-color: rgb(3, 133, 9);">
+                    <i class="fa-solid fa-box"></i>
+                    <h2>Total Products<br> <span id="dash-total-products">0</span></h2>
+               </div>
+                <div class="total" style="background-color: #f86503;">
+                    <i class="fa-solid fa-list"></i>
+                    <h2>Categories<br> <span id="dash-total-categories">0</span></h2>
+                </div>
+                <div class="total" style="background-color: #772ca5;">
+                    <i class="fa-regular fa-truck"></i>
+                    <h2>Suppliers<br> <span id="dash-total-suppliers">0</span></h2>
+                </div>
+          </div>
+          <div  class="resentSale">
+              <!-- demo container -->
+              <div class="demo-data">
+                  <h3><i class="fa-solid fa-chart-area"></i> Sales Trend Analysis</h3>
+                  <div class="container">
+                    <h1 id="chart-comparison-header">
+                      <i class="fa-regular fa-calendar"></i> 
+                      <span id="chart-today-label" style="color: rgb(1, 34, 219);">Today</span> 
+                      <em style="color: rgb(131, 131, 131); font-size: 16px;">VS.</em> 
+                      <span id="chart-yesterday-label" style="color: #f86503;">Yesterday</span> 
+                      <span class="sale" style="font-size: 18px;margin-left: 10px;">(Revenue GH₵)</span>
+                    </h1>
+                    <div class="chart-wrapper">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                  </div>
+              </div>
+              <div class="recently-activity">
+                  <div class="activity-list-header">
+                       <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Activities</h3>
+                       <p><a href="sub-folder/activities.html" style="text-decoration: none; color: #2f0464; font-weight: 600; font-size: 14px;">View All <i class="fa-solid fa-arrow-right"></i></a></p>
+                    </div>
+                  <div class="group-activity" id="dash-recent-activities">
+                      <!-- Activities loaded dynamically -->
+                  </div>
+              </div>
+                                  
+            
+       </section>
+       
+      
+
+    </main> 
+  </div>
+
+
+
+<script src="api-client.js"></script>
+<script src="index.js"></script>
+
+      
+    
+</body>
+</html> 

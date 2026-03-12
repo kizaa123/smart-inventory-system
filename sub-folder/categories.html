@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../auth-guard.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <title>Product-Categories</title>
+</head>
+<body>
+
+  <div class="layout">
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <!-- the navigation bar-->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="sidebar-header"><i class="fa-solid fa-boxes-stacked"></i><span>Stockmaster</span></div>
+
+      <ul class="nav-list">
+        <li class="nav-item"><a href="../index.html"><span><i class="fa-solid fa-gauge"></i></span><span class="nav-text">Dashboard</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/product.html"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
+        <li class="nav-item"><a href="categories.html" class="active"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+
+        <!-- the navigation logout buttun -->
+        <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </ul>
+    </nav>
+
+    <!-- Main Content – page for the website-->
+    <main class="main-content">
+     <div class="header">
+         <h1><i class="fa-solid fa-tags"></i> Categories</h1>
+      <button onclick="togglePopup()"><i class="fa-solid fa-plus"></i> Add Category</button>
+     </div>
+      <div class="searchbar">
+      <button style="border-radius: 7px 0 0  7px;">search</button>
+      <input type="search" placeholder="search item here......">
+      <button style="border-radius: 0 7px 7px 0;" id="filterBtn"><i class="fa-solid fa-filter"></i> Filter</button>
+      <div id="filterMenu" class="filter-menu">
+        <button onclick="sortData('asc')"><i class="fa-solid fa-sort-alpha-down"></i> A - Z</button>
+        <button onclick="sortData('desc')"><i class="fa-solid fa-sort-alpha-up"></i> Z - A</button>
+      </div>
+     </div>
+        <section>
+          <!-- the product table with borders -->
+        <table class="categories-table">
+            <thead>
+               <tr class="icon">
+                  <th><i class="fa-solid fa-list"></i> No.</th>
+                  <th><i class="fa-solid fa-tag"></i> Category Name</th>
+                  <th><i class="fa-solid fa-align-left"></i> Description</th>
+                  <th><i class="fa-solid fa-clock"></i> Created</th>
+                  <th><i class="fa-solid fa-pen-clip"></i> Action</th>
+               </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </section>
+    <!-- the popup part and content -->
+    <div id="backdrop" onclick="closePopup()"></div>
+     <div id="popup">
+      <div class="popup-content" id="content2">
+         <h3>Edit Category</h3>
+        <div class="product-form" style="width: 550px;">
+              <div class="bar-proName">
+                  <div class="productName" style="width: 100%;">
+                  <label for="editName" style="top: 0px; font-weight: 800; color: rgb(29, 29, 29);">Category Name</label><br>
+                  <input type="text" id="editName" placeholder="Category name">
+                </div>
+            </div>
+            <div class="bar-proName">
+                  <div class="productName" style="width: 100%;">
+                  <label for="editDescription" style="top: 0px; font-weight: 800; color: rgb(29, 29, 29);">Description</label><br>
+                  <input type="text" id="editDescription" placeholder="Category description">
+                </div>
+            </div>
+              <button id="saveProduct"  onclick="updateCategory()" style="margin-left: -250px; margin-bottom: 10px;">Save Edit</button>
+            </div>
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+        <div class="popup-content" id="content1">
+            <h2>New Category</h2>
+            <div class="product-form" style="width: 550px;">
+              <div class="bar-proName">
+                 <div class="productName" style="width: 100%;">
+                  <label for="addName" style="top: 0px; font-weight: 800; color: rgb(29, 29, 29);">Category Name</label><br>
+                  <input type="text" id="addName" placeholder="Category name">
+                </div>
+            </div>
+            <div class="bar-proName">
+                 <div class="productName" style="width: 100%;">
+                  <label for="addDescription" style="top: 0px; font-weight: 800; color: rgb(29, 29, 29);">Description</label><br>
+                  <input type="text" id="addDescription" placeholder="Category description">
+                </div>
+            </div>
+              <button id="saveProduct"  onclick="saveCategory()" style=" margin-bottom: 10px;">Save Category</button>
+             </div> 
+            <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
+    </main> 
+  <script src="../api-client.js"></script>
+  <script src="../index.js"></script>
+  <script src="../categories-api.js"></script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../auth-guard.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../api-client.js"></script>
+    <title>New Sale - POS</title>
+</head>
+<body>
+
+  <div class="layout pos-layout">
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <!-- the navigation bar-->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="sidebar-header"><i class="fa-solid fa-boxes-stacked"></i><span>Stockmaster</span></div>
+
+      <ul class="nav-list">
+        <li class="nav-item"><a href="../index.html"><span><i class="fa-solid fa-gauge"></i></span><span class="nav-text">Dashboard</span></a></li>
+        <li class="nav-item"><a href="product.html"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
+        <li class="nav-item"><a href="categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
+        <li class="nav-item"><a href="suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
+        <li class="nav-item"><a href="staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
+        <li class="nav-item"><a href="newSale.html" class="active"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+
+        <!-- the navigation logout buttun -->
+        <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </ul>
+    </nav>
+
+    <!-- Main Content for POS -->
+    <main class="main-content pos-main">
+      <div class="pos-container">
+        <!-- LEFT SIDE: Products Menu -->
+        <div class="pos-left">
+          <div class="pos-header">
+             <h1><i class="fa-solid fa-cash-register"></i> Point of Sale</h1>
+             <p>Select items to add to the current order.</p>
+          </div>
+          
+          <div class="pos-filters">
+            <div class="pos-searchbar">
+              <i class="fa-solid fa-search"></i>
+              <input type="search" id="posSearch" placeholder="Search products by name or SKU...">
+            </div>
+            
+            <div class="pos-categories" id="posCategories">
+              <button class="ctg-pill active" onclick="filterByCategory('all')">All</button>
+              <!-- Categories loaded dynamically -->
+            </div>
+          </div>
+
+          <div class="pos-products-grid" id="posProductsGrid">
+            <!-- Product Cards Here -->
+          </div>
+        </div>
+
+        <!-- RIGHT SIDE: Cart Sidebar e -->
+        <div class="pos-right">
+          <div class="cart-header">
+            <h2>Current Order</h2>
+            <button class="clear-cart-btn" onclick="clearCart()" title="Clear Cart"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+
+          <div class="cart-items" id="cartItemsContainer">
+            <!-- Cart items render here -->
+            <div class="empty-cart-message">
+              <i class="fa-solid fa-basket-shopping"></i>
+              <p>Your cart is empty.</p>
+            </div>
+          </div>
+
+          <div class="cart-summary">
+            <div class="summary-line">
+              <span>Subtotal</span>
+              <span id="cartSubtotal">GH<i class="fa-solid fa-cedi-sign"></i>0.00</span>
+            </div>
+            <div class="summary-line">
+              <span>Tax (0%)</span>
+              <span id="cartTax">GH<i class="fa-solid fa-cedi-sign"></i>0.00</span>
+            </div>
+            <div class="summary-line total-line">
+              <span>Total</span>
+              <span id="cartTotal">GH<i class="fa-solid fa-cedi-sign"></i>0.00</span>
+            </div>
+
+            <button class="checkout-btn" onclick="openCheckoutPopup()">
+              <i class="fa-solid fa-credit-card"></i> Proceed to Checkout
+            </button>
+          </div>
+        </div>
+      </div>
+    </main> 
+  </div>
+
+  <!-- Checkout Popup -->
+  <div id="backdrop" onclick="closePopup()"></div>
+  <div id="popup">
+      <div class="popup-content pos-checkout-popup" id="content1">
+          <h2><i class="fa-solid fa-receipt"></i> Checkout Summary</h2>
+          <div class="checkout-details">
+            <h1 id="checkoutTotalDisplay">GH<i class="fa-solid fa-cedi-sign"></i>0.00</h1>
+            <p>Total Amount Due</p>
+          </div>
+
+          <div class="checkout-form">
+              <label for="staffSelect">Served By (Staff)</label>
+              <select id="staffSelect" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px;">
+                <option value="">Select Staff Member</option>
+              </select>
+
+              <label for="paymentMethod">Payment Method</label>
+              <select id="paymentMethod" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px; outline: none;">
+                <option value="Cash">Cash</option>
+                <option value="Card">Credit/Debit Card</option>
+                <option value="Mobile">Mobile Money</option>
+              </select>
+
+              <button class="confirm-checkout-btn" onclick="completeSale()"><i class="fa-solid fa-check"></i> Complete Sale</button>
+          </div>
+          <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+
+  <script src="../index.js"></script>
+  <script src="../sale-api.js"></script>
+</body>
+</html>

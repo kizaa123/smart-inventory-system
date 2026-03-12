@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Stockmaster</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #2f0464 0%, #0122db 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            animation: fadeup 0.7s linear;
+        }
+        @keyframes fadeup {
+            from{
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to{
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .login-card h1 {
+            color: #2f0464;
+            margin-bottom: 25px;
+            display: flex;  
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .login-card h1 i {
+            color: #f86503;
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #666;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            border-color: #0122db;
+        }
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #888;
+            padding: 5px;
+        }
+        .password-toggle:hover {
+            color: #2f0464;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            background: #f86503;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .login-btn:hover {
+            background: #d45602;
+        }
+        .error-msg {
+            color: #dc3545;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1><i class="fa-solid fa-boxes-stacked"></i> Stockmaster</h1>
+        <p style="color: #888; margin-bottom: 30px;">Inventory Management System</p>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-container">
+                    <input type="password" id="password" placeholder="Enter password" required>
+                    <i class="fa-solid fa-eye password-toggle" id="togglePassword"></i>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="role">Login As</label>
+                <select id="role" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; background: white;">
+                    <option value="admin">Administrator</option>
+                    <option value="staff">Staff/User</option>
+                </select>
+            </div>
+            <button type="submit" class="login-btn">Login</button>
+            <div id="errorMsg" class="error-msg">❌ Invalid username or password</div>
+        </form>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script>
+        // Check if already logged in
+        if (localStorage.getItem('stockmaster_user')) {
+             window.location.href = 'index.html';
+        }
+
+        // Toggle Password Visibility
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordInput = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, selectedRole: role })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('stockmaster_user', JSON.stringify(data.user));
+                    
+                    // Redirect based on role
+                    if (data.user.role === 'staff') {
+                        window.location.href = 'sub-folder/product.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                } else {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = '❌ ' + (data.error || 'Invalid credentials');
+                }
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = '❌ Server error. Make sure backend is running.';
+            }
+        });
+    </script>
+</body>
+</html>
