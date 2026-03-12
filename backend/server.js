@@ -4,8 +4,8 @@ const bodyParser = require('body-parser');
 const db = require('./database');
 
 const app = express();
-const PORT = process.env.PORT || 5501;
-app.listen(PORT);
+const PORT = process.env.PORT || 5000;
+
 
 // Middleware
 app.use(cors());
