@@ -5,6 +5,7 @@ let staffData = [];
 let cart = [];
 let currentFilter = 'all';
 let searchQuery = '';
+let lastSaleData = null; // Store data for the last successful sale for printing
 const TAX_RATE = 0; // Set to 0 for now, could be e.g. 0.08 for 8%
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -92,7 +93,7 @@ function renderProducts() {
   });
 
   if (filteredProducts.length === 0) {
-    grid.innerHTML = `<div style="padding:20px; color:#777;">No products found.</div>`;
+    grid.innerHTML = `<div style="padding:20px; color:var(--text-muted);">No products found.</div>`;
     return;
   }
 
@@ -266,17 +267,10 @@ function openCheckoutPopup() {
   document.getElementById('content1').style.display = 'block';
 }
 
-function closePopup() {
-  const popup = document.getElementById('popup');
-  const backdrop = document.getElementById('backdrop');
-  if (popup && backdrop) {
-    popup.classList.remove('active');
-    backdrop.classList.remove('active');
-  }
-}
-
 async function completeSale() {
   const staffId = document.getElementById('staffSelect').value;
+  const customerName = document.getElementById('customerName').value.trim();
+  
   if (!staffId) {
     alert('Please select the staff member who served this order.');
     return;
@@ -299,12 +293,36 @@ async function completeSale() {
     };
 
     const response = await SalesAPI.create(payload);
-    alert(`✅ ${response.message}\nOrder Number: ${response.order_id}`);
     
-    // Clear cart and close
+    // Show custom success modal instead of alert
+    document.getElementById('content1').style.display = 'none';
+    const content2 = document.getElementById('content2');
+    if (content2) {
+      document.getElementById('successMessage').textContent = response.message;
+      document.getElementById('successOrderId').textContent = '#' + response.order_id;
+      
+      // Calculate total for display
+      let totalValue = 0;
+      cart.forEach(item => totalValue += (item.price * item.quantity));
+      document.getElementById('successAmount').textContent = 'GH₵' + totalValue.toFixed(2);
+      
+      // Store data for printing
+      const staffName = document.getElementById('staffSelect').options[document.getElementById('staffSelect').selectedIndex].text;
+      lastSaleData = {
+          order_id: response.order_id,
+          date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+          staff_name: staffName,
+          customer_name: customerName,
+          items: cart.map(item => ({...item})),
+          total: totalValue.toFixed(2)
+      };
+
+      content2.style.display = 'block';
+    }
+    
+    // Clear cart
     cart = [];
     updateCartUI();
-    closePopup();
     
     // Reload products so inventory quantities are updated
     const products = await ProductAPI.getAll();
@@ -317,5 +335,63 @@ async function completeSale() {
   } finally {
     btn.innerHTML = originalText;
     btn.disabled = false;
+  }
+}
+
+function printReceipt() {
+    console.log("Printing receipt with data:", lastSaleData);
+    if (!lastSaleData) {
+        alert("No sale data found to print. Please complete a sale first.");
+        return;
+    }
+
+    // Populate Receipt
+    document.getElementById("print-date").textContent = lastSaleData.date;
+    document.getElementById("print-order-id").textContent = "#" + lastSaleData.order_id;
+    document.getElementById("print-server").textContent = lastSaleData.staff_name;
+    
+    if (lastSaleData.customer_name) {
+        document.getElementById("print-customer").textContent = lastSaleData.customer_name;
+        document.getElementById("print-customer-row").style.display = "flex";
+    } else {
+        document.getElementById("print-customer-row").style.display = "none";
+    }
+
+    const itemsBody = document.getElementById("print-items-body");
+    itemsBody.innerHTML = "";
+    lastSaleData.items.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${item.name}</td>
+            <td style="text-align: center;">${item.quantity}</td>
+            <td style="text-align: right;">${(item.price * item.quantity).toFixed(2)}</td>
+        `;
+        itemsBody.appendChild(tr);
+    });
+
+    document.getElementById("print-total").textContent = "GH₵" + lastSaleData.total;
+
+    // Trigger Print
+    window.print();
+}
+
+function closePopup() {
+  const popup = document.getElementById("popup");
+  const backdrop = document.getElementById("backdrop");
+  if (popup && backdrop) {
+    popup.classList.remove("active");
+    backdrop.classList.remove("active");
+    
+    // Reset contents for next time
+    setTimeout(() => {
+        const content1 = document.getElementById("content1");
+        const content2 = document.getElementById("content2");
+        if (content1) content1.style.display = "block";
+        if (content2) content2.style.display = "none";
+        
+        // Reset customer name
+        const custInput = document.getElementById("customerName");
+        if (custInput) custInput.value = "";
+    }, 300);
   }
 }

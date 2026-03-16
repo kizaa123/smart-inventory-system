@@ -3,23 +3,82 @@ let productsData = [];
 let categoriesData = [];
 let suppliersData = [];
 let currentEditingProductId = null;
+let notifiedLowStockIds = new Set(); // Track products already notified
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('Product page DOMContentLoaded fired');
+  loadNotificationHistory(); // Load notification history from storage
   loadProducts();
   loadCategories();
   loadSuppliers();
   setupEventListeners();
+  console.log('Product page initialization complete');
 });
+
+// Load notification history to avoid duplicate alerts
+function loadNotificationHistory() {
+  const stored = localStorage.getItem('notifiedLowStockIds');
+  if (stored) {
+    notifiedLowStockIds = new Set(JSON.parse(stored));
+  }
+}
+
+// Save notification history
+function saveNotificationHistory() {
+  localStorage.setItem('notifiedLowStockIds', JSON.stringify(Array.from(notifiedLowStockIds)));
+}
 
 // Load all products from API
 async function loadProducts() {
   try {
+    console.log('Starting to load products...');
     productsData = await ProductAPI.getAll();
+    console.log('Products loaded:', productsData);
+    checkLowStockNotifications(); // Check for low stock items
     renderProductTable();
   } catch (error) {
     console.error('Failed to load products:', error);
     alert('❌ Failed to load products. Make sure the backend is running.');
+  }
+}
+
+// Check for low stock items and create notifications
+function checkLowStockNotifications() {
+  try {
+    productsData.forEach(product => {
+      const threshold = product.low_stock_threshold || 10;
+      // Only notify if stock is low and we haven't already notified about this product
+      if (product.stock_quantity < threshold && !notifiedLowStockIds.has(String(product.id))) {
+        logNotification('LOW_STOCK', `⚠️ Low Stock Alert: ${product.name} (SKU: ${product.sku}) has only ${product.stock_quantity} units remaining`);
+        notifiedLowStockIds.add(String(product.id));
+      }
+      // Remove from notified set if stock is now replenished
+      if (product.stock_quantity >= threshold && notifiedLowStockIds.has(String(product.id))) {
+        notifiedLowStockIds.delete(String(product.id));
+      }
+    });
+    saveNotificationHistory();
+  } catch (error) {
+    console.error('Error checking low stock:', error);
+  }
+}
+
+// Log notification to backend (fire and forget, no wait)
+function logNotification(type, description) {
+  // Send notification asynchronously without waiting
+  try {
+    fetch('http://localhost:5000/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, description })
+    }).catch(() => {
+      // Silently fail if endpoint doesn't exist
+      console.log('Notification not sent:', type);
+    });
+  } catch (error) {
+    // Do nothing if fetch fails
+    console.log('Notification error (ignored):', error.message);
   }
 }
 
@@ -74,21 +133,21 @@ function populateSupplierSelect() {
 // Render products in table
 function renderProductTable(dataToRender = productsData) {
   const tbody = document.querySelector('table tbody');
-  if (!tbody) return;
-
-  // If no products, show empty state
-  if (!dataToRender || dataToRender.length === 0) {
-    // Keep only header
-    const headerRow = tbody.querySelector('tr.icon');
-    tbody.innerHTML = '';
-    if (headerRow) tbody.appendChild(headerRow);
+  if (!tbody) {
+    console.error('Table tbody not found!');
     return;
   }
 
-  // Clear and rebuild
-  const headerRow = tbody.querySelector('tr.icon');
+  console.log('Rendering products:', dataToRender);
+
+  // If no products, show empty state
+  if (!dataToRender || dataToRender.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No products found</td></tr>';
+    return;
+  }
+
+  // Clear existing rows (but keep it simple)
   tbody.innerHTML = '';
-  if (headerRow) tbody.appendChild(headerRow);
 
   // Add product rows
   dataToRender.forEach(product => {
@@ -103,18 +162,37 @@ function renderProductTable(dataToRender = productsData) {
         <td>GH<i class="fa-solid fa-cedi-sign"></i>${product.sell_price.toFixed(2)}</td>
         <td><div class="${stockClass}">${product.stock_quantity}</div></td>
         <td>
-          <div class="action">
-            <div class="edit" onclick="editProduct('${product.id}')" title="edit product">
-              <i class="fa-solid fa-pen-to-square"></i>
+          <div class="action-container">
+            <!-- Desktop Action Buttons -->
+            <div class="action action-buttons-desktop">
+              <div class="edit" onclick="editProduct('${product.id}')" title="edit product">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </div>
+              <div class="trash" onclick="deleteProductById('${product.id}')" title="delete product">
+                <i class="fa-solid fa-trash"></i>
+              </div>
             </div>
-            <div class="trash" onclick="deleteProductById('${product.id}')" title="delete product">
-              <i class="fa-solid fa-trash"></i>
+
+            <!-- Mobile Action Trigger (Ellipsis) -->
+            <div class="mobile-action-trigger" onclick="toggleMobileMenu(event, '${product.id}')">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </div>
+
+            <!-- Mobile Action Menu -->
+            <div id="mobileMenu-${product.id}" class="mobile-action-menu">
+              <button class="mobile-action-item" onclick="editProduct('${product.id}')">
+                <i class="fa-solid fa-pen-to-square" style="color: #1354e2;"></i> Edit
+              </button>
+              <button class="mobile-action-item delete" onclick="deleteProductById('${product.id}')">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
             </div>
           </div>
         </td>
       `;
       tbody.appendChild(row);
     });
+  console.log('Finished rendering', dataToRender.length, 'products');
 }
 
 // Setup event listeners for sidebar and popups
@@ -135,7 +213,25 @@ function setupEventListeners() {
     });
   }
 
-  // Sidebar toggle
+  // Click outside close mobile menus
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.mobile-action-menu.active').forEach(menu => {
+      menu.classList.remove('active');
+    });
+  });
+}
+
+function toggleMobileMenu(event, id) {
+  event.stopPropagation();
+  // Close all other menus
+  document.querySelectorAll('.mobile-action-menu').forEach(m => {
+    if (m.id !== `mobileMenu-${id}`) m.classList.remove('active');
+  });
+  
+  const menu = document.getElementById(`mobileMenu-${id}`);
+  if (menu) {
+    menu.classList.toggle('active');
+  }
 }
 
 // Toggle popup for add product
@@ -167,13 +263,13 @@ function togglePopup() {
 
 // Edit product
 function editProduct(productId) {
-  const product = productsData.find(p => p.id === productId);
+  const product = productsData.find(p => String(p.id) === String(productId));
   if (!product) {
     alert('❌ Product not found');
     return;
   }
 
-  currentEditingProductId = productId;
+  currentEditingProductId = parseInt(productId);
 
   // Populate edit form
   document.querySelector('#editName').value = product.name;
@@ -277,6 +373,10 @@ async function updateProduct() {
   }
 
   try {
+    // Get old stock for comparison
+    const oldProduct = productsData.find(p => p.id === currentEditingProductId);
+    const oldStock = oldProduct ? oldProduct.stock_quantity : 0;
+    
     await ProductAPI.update(currentEditingProductId, {
       name,
       image_url: imageUrl,
@@ -286,6 +386,12 @@ async function updateProduct() {
       sell_price: sellPrice,
       stock_quantity: stock
     });
+
+    // Check if stock was increased and notify
+    if (stock > oldStock) {
+      const addedStock = stock - oldStock;
+      logNotification('STOCK_LOADED', `📦 ${name} has been restocked with ${addedStock} units (New total: ${stock})`);
+    }
 
     alert('🔄 Product updated successfully!');
     closePopup();
@@ -297,6 +403,7 @@ async function updateProduct() {
 
 // Delete product
 async function deleteProductById(productId) {
+  productId = parseInt(productId);
   if (!confirm('⚠️ Are you sure you want to delete this product?')) {
     return;
   }

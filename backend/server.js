@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const db = require('./database');
 
 const app = express();
+const path = require('path');
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
@@ -14,6 +15,9 @@ app.listen(PORT, '0.0.0.0', () => {
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve static frontend files from the parent directory
+app.use(express.static(path.join(__dirname, '../')));
  
 // Activity Logging Helper
 function logActivity(type, description) {
@@ -345,7 +349,7 @@ app.post('/api/sales', (req, res) => {
     return res.status(400).json({ error: 'Cart is empty' });
   }
 
-  const order_id = 'ORD-' + Date.now();
+  const order_id = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   
   db.beginTransaction(err => {
     if (err) return res.status(500).json({ error: err.message });
@@ -524,7 +528,7 @@ app.get('/api/dashboard/recent-sales', (req, res) => {
   });
 });
 
-// DELETE activity log
+// DELETE single activity log
 app.delete('/api/activities/:id', (req, res) => {
   db.query('DELETE FROM activities WHERE id = ?', [req.params.id], (err, results) => {
     if (err) {
@@ -533,6 +537,79 @@ app.delete('/api/activities/:id', (req, res) => {
       res.status(404).json({ error: 'Activity not found' });
     } else {
       res.json({ message: 'Activity deleted successfully' });
+    }
+  });
+});
+
+// DELETE all activity logs
+app.delete('/api/activities', (req, res) => {
+  db.query('DELETE FROM activities', [], (err, results) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.json({ message: 'All activities deleted successfully' });
+    }
+  });
+});
+
+// POST create notification (saves to activities table)
+app.post('/api/notifications', (req, res) => {
+  const { type, description } = req.body;
+  
+  if (!type || !description) {
+    return res.status(400).json({ error: 'Missing type or description' });
+  }
+
+  db.query(
+    'INSERT INTO activities (type, description) VALUES (?, ?)',
+    [type, description],
+    (err, results) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else {
+        res.json({ id: results.insertId, message: 'Notification created successfully' });
+      }
+    }
+  );
+});
+
+// ==================== REPORTS ENDPOINTS ====================
+app.get('/api/reports/sales', (req, res) => {
+  const { startDate, endDate, category } = req.query;
+  
+  let query = `
+    SELECT 
+      s.id, s.order_id, s.quantity, s.unit_price, s.total_amount, s.sale_date,
+      p.name as product_name, c.name as category_name,
+      staff.name as staff_name
+    FROM sales s
+    LEFT JOIN products p ON s.product_id = p.id
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN staff ON s.staff_id = staff.id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (startDate) {
+    query += ` AND DATE(s.sale_date) >= ?`;
+    params.push(startDate);
+  }
+  if (endDate) {
+    query += ` AND DATE(s.sale_date) <= ?`;
+    params.push(endDate);
+  }
+  if (category && category !== 'all') {
+    query += ` AND c.name = ?`;
+    params.push(category);
+  }
+
+  query += ` ORDER BY s.sale_date DESC`;
+
+  db.query(query, params, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.json(rows);
     }
   });
 });

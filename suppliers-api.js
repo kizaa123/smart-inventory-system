@@ -48,12 +48,30 @@ function renderSuppliersTable(dataToRender = suppliersData) {
         <td>${supplier.phone || 'N/A'}</td>
         <td>${supplier.address || 'N/A'}</td>
         <td>
-          <div class="action">
-            <div class="edit" onclick="editSupplier('${supplier.id}')" title="edit supplier">
-              <i class="fa-solid fa-pen-to-square"></i>
+          <div class="action-container">
+            <!-- Desktop Action Buttons -->
+            <div class="action action-buttons-desktop">
+              <div class="edit" onclick="editSupplier('${supplier.id}')" title="edit supplier">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </div>
+              <div class="trash" onclick="deleteSupplierById('${supplier.id}')" title="delete supplier">
+                <i class="fa-solid fa-trash"></i>
+              </div>
             </div>
-            <div class="trash" onclick="deleteSupplierById('${supplier.id}')" title="delete supplier">
-              <i class="fa-solid fa-trash"></i>
+
+            <!-- Mobile Action Trigger (Ellipsis) -->
+            <div class="mobile-action-trigger" onclick="toggleMobileMenu(event, '${supplier.id}')">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </div>
+
+            <!-- Mobile Action Menu -->
+            <div id="mobileMenu-${supplier.id}" class="mobile-action-menu">
+              <button class="mobile-action-item" onclick="editSupplier('${supplier.id}')">
+                <i class="fa-solid fa-pen-to-square" style="color: #1354e2;"></i> Edit
+              </button>
+              <button class="mobile-action-item delete" onclick="deleteSupplierById('${supplier.id}')">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
             </div>
           </div>
         </td>
@@ -78,6 +96,26 @@ function setupEventListeners() {
     document.addEventListener('click', () => {
       filterMenu.classList.remove('active');
     });
+  }
+
+  // Click outside close mobile menus
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.mobile-action-menu.active').forEach(menu => {
+      menu.classList.remove('active');
+    });
+  });
+}
+
+function toggleMobileMenu(event, id) {
+  event.stopPropagation();
+  // Close all other menus
+  document.querySelectorAll('.mobile-action-menu').forEach(m => {
+    if (m.id !== `mobileMenu-${id}`) m.classList.remove('active');
+  });
+  
+  const menu = document.getElementById(`mobileMenu-${id}`);
+  if (menu) {
+    menu.classList.toggle('active');
   }
 }
 
@@ -107,13 +145,13 @@ function togglePopup() {
 
 // Edit supplier
 function editSupplier(supplierId) {
-  const supplier = suppliersData.find(s => s.id === supplierId);
+  const supplier = suppliersData.find(s => String(s.id) === String(supplierId));
   if (!supplier) {
     alert('❌ Supplier not found');
     return;
   }
 
-  currentEditingSupplierId = supplierId;
+  currentEditingSupplierId = parseInt(supplierId);
 
   document.querySelector('#editName').value = supplier.name;
   document.querySelector('#editContact').value = supplier.contact_person || '';
@@ -199,6 +237,7 @@ async function updateSupplier() {
 
 // Delete supplier
 async function deleteSupplierById(supplierId) {
+  supplierId = parseInt(supplierId);
   if (!confirm('⚠️ Are you sure you want to delete this supplier?')) {
     return;
   }

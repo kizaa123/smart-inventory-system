@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../auth-guard.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="../styles.css">
+    <title>Contact Us - Stockmaster</title>
+</head>
+<body>
+
+  <div class="layout">
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-header"><i class="fa-solid fa-boxes-stacked"></i><span>Stockmaster</span></div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="../index.html"><span><i class="fa-solid fa-gauge"></i></span><span class="nav-text">Dashboard</span></a></li>
+        <li class="nav-item"><a href="product.html"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
+        <li class="nav-item"><a href="categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
+        <li class="nav-item"><a href="suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
+        <li class="nav-item"><a href="staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
+        <li class="nav-item"><a href="newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+        <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="#" id="bell-btn"><span class="bell-icon"><i class="fa-solid fa-bell"></i></span><span class="nav-text">notification</span><div class="badge" id="activity-badge"></div></a></li>
+        <li class="nav-item"><a href="#" class="theme-toggle-btn"><span><i class="fa-solid fa-moon theme-toggle-i"></i></span><span class="nav-text">Theme</span></a></li>
+        <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </ul>
+    </nav>
+
+    <main class="main-content">
+      <div class="header">
+        <h1><i class="fa-solid fa-envelope"></i> Contact Us</h1>
+      </div>
+
+      <div class="contact-container">
+        <div class="contact-card">
+          <h2>Get in Touch</h2>
+          <form class="contact-form" id="contactForm">
+            <div class="form-group">
+              <label for="contact-name">Full Name</label>
+              <input type="text" id="contact-name" placeholder="Enter your name" required>
+            </div>
+            <div class="form-group">
+              <label for="contact-role">Your Role</label>
+              <select id="contact-role" required>
+                <option value="" disabled selected>Select your role</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" placeholder="How can we help you?" required></textarea>
+            </div>
+            <div class="messaging-actions">
+              <button type="button" onclick="handleSendMessage('whatsapp')" class="submit-btn whatsapp-btn">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+              </button>
+              <button type="button" onclick="handleSendMessage('sms')" class="submit-btn sms-btn">
+                <i class="fa-solid fa-comment-sms"></i> SMS
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <footer class="site-footer">
+        <div class="footer-content">
+          <div class="footer-links">
+            <a href="../index.html"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            <a href="product.html"><i class="fa-solid fa-box"></i> Products</a>
+            <a href="categories.html"><i class="fa-solid fa-list"></i> Categories</a>
+            <a href="suppliers.html"><i class="fa-regular fa-truck"></i> Suppliers</a>
+            <a href="staff.html"><i class="fa-solid fa-users"></i> Staff</a>
+            <a href="newSale.html"><i class="fa-solid fa-file-invoice-dollar"></i> New Sale</a>
+            <a href="report.html"><i class="fa-sharp fa-solid fa-chart-line"></i> Report</a>
+            <a href="contact.html" class="active"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+          </div>
+          <div class="footer-bottom">
+            &copy; 2026 Stockmaster Inventory System. All rights reserved.
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div id="activities-modal" class="modal">
+    <div class="modal-content" id="modal-content">
+      <span class="close">&times;</span>
+      <h3>Notifications</h3>
+      <div id="modal-recent-activities" class="group-activity"></div>
+      <div style="text-align: center; padding: 15px; border-top: 1px solid #a5a4a4; margin-top: 15px;">
+        <a href="activities.html" style="text-decoration: none; color: #4e4e4e; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+          View More <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../theme-toggle.js"></script>
+  <script src="../api-client.js"></script>
+  <script>
+    // Sidebar toggle logic for mobile
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    if (menuBtn && sidebar) {
+      menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('expanded');
+      });
+    }
+
+    // Modal logic
+    const bellBtn = document.getElementById('bell-btn');
+    const modal = document.getElementById('activities-modal');
+    const closeBtn = document.querySelector('.close');
+
+    if (bellBtn && modal) {
+      bellBtn.onclick = (e) => {
+        e.preventDefault();
+        modal.style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('modal-content').classList.add('active');
+        }, 10);
+      }
+    }
+
+    if (closeBtn && modal) {
+      closeBtn.onclick = () => {
+        const content = document.getElementById('modal-content');
+        content.classList.remove('active');
+        content.classList.add('closing');
+        setTimeout(() => {
+          modal.style.display = 'none';
+          content.classList.remove('closing');
+        }, 500);
+      }
+    }
+
+    window.onclick = (event) => {
+      if (event.target == modal) {
+        closeBtn.onclick();
+      }
+    }
+
+    function handleSendMessage(platform) {
+      const name = document.getElementById('contact-name').value;
+      const role = document.getElementById('contact-role').value;
+      const message = document.getElementById('contact-message').value;
+      
+      if (!name || !role || !message) {
+        alert('Please fill in all fields before sending.');
+        return;
+      }
+      
+      const phone = "+233531806381"; // Default contact number
+      const fullMessage = `*Smart Inventory System - Message*\n\nSender: ${name}\nRole: ${role}\n\nMessage:\n${message}`;
+      const encodedMessage = encodeURIComponent(fullMessage);
+      
+      let url = "";
+      if (platform === 'whatsapp') {
+        url = `https://wa.me/${phone}?text=${encodedMessage}`;
+      } else if (platform === 'sms') {
+        // Universal SMS link
+        url = `sms:${phone}?body=${encodedMessage}`;
+      }
+      
+      if (url) {
+        window.open(url, '_blank');
+      }
+    }
+  </script>
+</body>
+</html>
+  

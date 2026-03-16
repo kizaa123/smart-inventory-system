@@ -49,12 +49,30 @@ function renderStaffTable(dataToRender = staffData) {
         <td>${member.position}</td>
         <td><div class="status"><i class="fa-solid fa-circle-check"></i> ${member.status}</div></td>
         <td>
-          <div class="action">
-            <div class="edit" onclick="editStaff('${member.id}')" title="edit staff">
-              <i class="fa-solid fa-pen-to-square"></i>
+          <div class="action-container">
+            <!-- Desktop Action Buttons -->
+            <div class="action action-buttons-desktop">
+              <div class="edit" onclick="editStaff('${member.id}')" title="edit staff">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </div>
+              <div class="trash" onclick="deleteStaffById('${member.id}')" title="delete staff">
+                <i class="fa-solid fa-trash"></i>
+              </div>
             </div>
-            <div class="trash" onclick="deleteStaffById('${member.id}')" title="delete staff">
-              <i class="fa-solid fa-trash"></i>
+
+            <!-- Mobile Action Trigger (Ellipsis) -->
+            <div class="mobile-action-trigger" onclick="toggleMobileMenu(event, '${member.id}')">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </div>
+
+            <!-- Mobile Action Menu -->
+            <div id="mobileMenu-${member.id}" class="mobile-action-menu">
+              <button class="mobile-action-item" onclick="editStaff('${member.id}')">
+                <i class="fa-solid fa-pen-to-square" style="color: #1354e2;"></i> Edit
+              </button>
+              <button class="mobile-action-item delete" onclick="deleteStaffById('${member.id}')">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
             </div>
           </div>
         </td>
@@ -80,6 +98,26 @@ function setupEventListeners() {
       filterMenu.classList.remove('active');
     });
   }
+
+  // Click outside close mobile menus
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.mobile-action-menu.active').forEach(menu => {
+      menu.classList.remove('active');
+    });
+  });
+}
+
+function toggleMobileMenu(event, id) {
+  event.stopPropagation();
+  // Close all other menus
+  document.querySelectorAll('.mobile-action-menu').forEach(m => {
+    if (m.id !== `mobileMenu-${id}`) m.classList.remove('active');
+  });
+  
+  const menu = document.getElementById(`mobileMenu-${id}`);
+  if (menu) {
+    menu.classList.toggle('active');
+  }
 }
 
 // Toggle popup for add staff
@@ -104,11 +142,14 @@ function togglePopup() {
     if (addImageInput) addImageInput.value = '';
     document.querySelector('#addPhone').value = '';
     document.querySelector('#addPosition').value = '';
+    document.querySelector('#addDepartment').value = '';
+    document.querySelector('#addStatus').value = 'active';
   }
 }
 
 // Edit staff
 function editStaff(staffId) {
+  staffId = parseInt(staffId); // Convert string ID to integer
   const member = staffData.find(s => s.id === staffId);
   if (!member) {
     alert('❌ Staff member not found');
@@ -123,6 +164,7 @@ function editStaff(staffId) {
   document.querySelector('#editEmail').value = member.email || '';
   document.querySelector('#editPhone').value = member.phone || '';
   document.querySelector('#editPosition').value = member.position;
+  document.querySelector('#editDepartment').value = member.department || '';
   document.querySelector('#editStatus').value = member.status;
 
   const popup = document.getElementById('popup');
@@ -144,6 +186,8 @@ async function saveStaff() {
   const email = document.querySelector('#addEmail')?.value;
   const phone = document.querySelector('#addPhone')?.value;
   const position = document.querySelector('#addPosition')?.value;
+  const department = document.querySelector('#addDepartment')?.value || '';
+  const status = document.querySelector('#addStatus')?.value || 'active';
 
   const imageInput = document.querySelector('#addImage');
   let imageUrl = '';
@@ -166,6 +210,8 @@ async function saveStaff() {
       email,
       phone,
       position,
+      department,
+      status,
       image_url: imageUrl
     });
 
@@ -188,6 +234,7 @@ async function updateStaff() {
   const email = document.querySelector('#editEmail')?.value;
   const phone = document.querySelector('#editPhone')?.value;
   const position = document.querySelector('#editPosition')?.value;
+  const department = document.querySelector('#editDepartment')?.value || '';
   const status = document.querySelector('#editStatus')?.value;
 
   const imageInput = document.querySelector('#editImage');
@@ -216,6 +263,7 @@ async function updateStaff() {
       email,
       phone,
       position,
+      department,
       status,
       image_url: imageUrl
     });
@@ -230,6 +278,7 @@ async function updateStaff() {
 
 // Delete staff
 async function deleteStaffById(staffId) {
+  staffId = parseInt(staffId);
   if (!confirm('⚠️ Are you sure you want to delete this staff member?')) {
     return;
   }

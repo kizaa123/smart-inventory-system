@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <title>Dashboar-management</title>
+    <title>Dashboard-management</title>
 </head>
 <body>
 
@@ -25,7 +25,10 @@
         <li class="nav-item"><a href="./sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
         <li class="nav-item"><a href="./sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
         <li class="nav-item"><a href="sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
-        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="sub-folder/report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="sub-folder/contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
+        <li class="nav-item"><a href="#" id="bell-btn"><span class="bell-icon"><i class="fa-solid fa-bell"></i></span><span class="nav-text">notification</span><div class="badge" id="activity-badge"></div></a></li>
+        <li class="nav-item"><a href="#" class="theme-toggle-btn"><span><i class="fa-solid fa-moon theme-toggle-i"></i></span><span class="nav-text">Theme</span></a></li>
 
         <!-- the navigation logout buttun -->
         <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -77,30 +80,51 @@
                     </div>
                   </div>
               </div>
-              <div class="recently-activity">
-                  <div class="activity-list-header">
-                       <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Activities</h3>
-                       <p><a href="sub-folder/activities.html" style="text-decoration: none; color: #2f0464; font-weight: 600; font-size: 14px;">View All <i class="fa-solid fa-arrow-right"></i></a></p>
-                    </div>
-                  <div class="group-activity" id="dash-recent-activities">
-                      <!-- Activities loaded dynamically -->
-                  </div>
-              </div>
                                   
             
        </section>
+       
+       <footer class="site-footer">
+        <div class="footer-content">
+          <div class="footer-links">
+            <a href="index.html"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            <a href="sub-folder/product.html"><i class="fa-solid fa-box"></i> Products</a>
+            <a href="sub-folder/categories.html"><i class="fa-solid fa-list"></i> Categories</a>
+            <a href="sub-folder/suppliers.html"><i class="fa-regular fa-truck"></i> Suppliers</a>
+            <a href="sub-folder/staff.html"><i class="fa-solid fa-users"></i> Staff</a>
+            <a href="sub-folder/newSale.html"><i class="fa-solid fa-file-invoice-dollar"></i> New Sale</a>
+            <a href="sub-folder/report.html"><i class="fa-sharp fa-solid fa-chart-line"></i> Report</a>
+            <a href="sub-folder/contact.html"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+          </div>
+          <div class="footer-bottom">
+            &copy; 2026 Stockmaster Inventory System. All rights reserved.
+          </div>
+        </div>
+      </footer>
        
       
 
     </main> 
   </div>
 
+<!-- Modal for recent activities -->
+<div id="activities-modal" class="modal">
+  <div class="modal-content" id="modal-content">
+    <span class="close">&times;</span>
+    <h3>Notifications</h3>
+    <div id="modal-recent-activities" class="group-activity">
+      <!-- Activities loaded dynamically -->
+    </div>
+    <div style="text-align: center; padding: 15px; border-top: 1px solid #a5a4a4; margin-top: 15px;">
+      <a href="sub-folder/activities.html" style="text-decoration: none; color: #4e4e4e; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+        View More <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
 
-
+<script src="theme-toggle.js"></script>
 <script src="api-client.js"></script>
 <script src="index.js"></script>
-
-      
-    
 </body>
 </html> 

@@ -25,7 +25,9 @@
         <li class="nav-item"><a href="../sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
         <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
         <li class="nav-item"><a href="../sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
-        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="#" id="bell-btn"><span class="bell-icon"><i class="fa-solid fa-bell"></i></span><span class="nav-text">notification</span><div class="badge" id="activity-badge"></div></a></li>
+        <li class="nav-item"><a href="#" class="theme-toggle-btn"><span><i class="fa-solid fa-moon theme-toggle-i"></i></span><span class="nav-text">Theme</span></a></li>
 
         <!-- the navigation logout buttun -->
         <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -51,7 +53,7 @@
           <!-- the product table with borders -->
         <table class="categories-table">
             <thead>
-               <tr class="icon">
+                <tr class="icon">
                   <th><i class="fa-solid fa-list"></i> No.</th>
                   <th><i class="fa-solid fa-tag"></i> Category Name</th>
                   <th><i class="fa-solid fa-align-left"></i> Description</th>
@@ -106,7 +108,25 @@
         </div>
     </div>
 
-    </main> 
+    </main>
+
+<!-- Modal for recent activities -->
+<div id="activities-modal" class="modal">
+  <div class="modal-content" id="modal-content">
+    <span class="close">&times;</span>
+    <h3>Notifications</h3>
+    <div id="modal-recent-activities" class="group-activity">
+      <!-- Activities loaded dynamically -->
+    </div>
+    <div style="text-align: center; padding: 15px; border-top: 1px solid #a5a4a4; margin-top: 15px;">
+      <a href="activities.html" style="text-decoration: none; color: #4e4e4e; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+        View More <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+  <script src="../theme-toggle.js"></script>
   <script src="../api-client.js"></script>
   <script src="../index.js"></script>
   <script src="../categories-api.js"></script>

@@ -113,9 +113,13 @@ function injectMobileProfile(imgSrc, isStaff) {
     }
 
     if (isStaff) {
-        mobileContainer.innerHTML = `<div class="mobile-us-badge">U/S</div>`;
+        mobileContainer.innerHTML = `
+            <div id="mobile-bell-btn" class="mobile-bell"><i class="fa-solid fa-bell"></i><div class="badge" id="mobile-activity-badge"></div></div>
+            <div class="mobile-us-badge">U/S</div>`;
     } else {
-        mobileContainer.innerHTML = `<img src="${imgSrc}" class="mobile-profile-pic">`;
+        mobileContainer.innerHTML = `
+            <div id="mobile-bell-btn" class="mobile-bell"><i class="fa-solid fa-bell"></i><div class="badge" id="mobile-activity-badge"></div></div>
+            <img src="${imgSrc}" class="mobile-profile-pic">`;
     }
 }
 

@@ -1,7 +1,8 @@
 // API Configuration (Switch between Node.js and PHP for XAMPP)
-// const API_BASE_URL = 'http://172.26.62.240:5000/api'; // Node.js (Local Network)
-const API_BASE_URL = 'http://localhost:5000/api'; // Node.js (Local only)
-// const API_BASE_URL = 'http://localhost/inventory website/backend/api.php?action='; // PHP
+let API_BASE_URL = 'http://localhost:5000/api'; // Default for local file:// testing
+if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+    API_BASE_URL = window.location.origin + '/api'; // Use current host for Port Forwarding
+}
 
 // Utility function to handle API requests
 async function apiCall(endpoint, method = 'GET', data = null) {
@@ -79,5 +80,20 @@ const SalesAPI = {
 const DashboardAPI = {
   getStats: () => apiCall('/dashboard/stats'),
   getRecentSales: (limit = 10) => apiCall(`/dashboard/recent-sales?limit=${limit}`),
-  deleteActivity: (id) => apiCall(`/activities/${id}`, 'DELETE')
+  deleteActivity: (id) => apiCall(`/activities/${id}`, 'DELETE'),
+  deleteAllActivities: () => apiCall('/activities', 'DELETE')
+};
+
+// ==================== REPORT API ====================
+
+const ReportAPI = {
+  getSales: (startDate, endDate, category) => {
+    let url = '/reports/sales?';
+    if (startDate) url += `startDate=${startDate}&`;
+    if (endDate) url += `endDate=${endDate}&`;
+    if (category) url += `category=${category}`;
+    // clean up trailing ampersand if present
+    if (url.endsWith('&') || url.endsWith('?')) url = url.slice(0, -1);
+    return apiCall(url);
+  }
 };

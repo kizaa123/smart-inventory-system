@@ -46,12 +46,30 @@ function renderCategoriesTable(dataToRender = categoriesData) {
         <td>${category.description || 'N/A'}</td>
         <td>${new Date(category.created_at).toLocaleString() || 'N/A'}</td>
         <td>
-          <div class="action">
-            <div class="edit" onclick="editCategory('${category.id}')" title="edit category">
-              <i class="fa-solid fa-pen-to-square"></i>
+          <div class="action-container">
+            <!-- Desktop Action Buttons -->
+            <div class="action action-buttons-desktop">
+              <div class="edit" onclick="editCategory('${category.id}')" title="edit category">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </div>
+              <div class="trash" onclick="deleteCategoryById('${category.id}')" title="delete category">
+                <i class="fa-solid fa-trash"></i>
+              </div>
             </div>
-            <div class="trash" onclick="deleteCategoryById('${category.id}')" title="delete category">
-              <i class="fa-solid fa-trash"></i>
+
+            <!-- Mobile Action Trigger (Ellipsis) -->
+            <div class="mobile-action-trigger" onclick="toggleMobileMenu(event, '${category.id}')">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </div>
+
+            <!-- Mobile Action Menu -->
+            <div id="mobileMenu-${category.id}" class="mobile-action-menu">
+              <button class="mobile-action-item" onclick="editCategory('${category.id}')">
+                <i class="fa-solid fa-pen-to-square" style="color: #1354e2;"></i> Edit
+              </button>
+              <button class="mobile-action-item delete" onclick="deleteCategoryById('${category.id}')">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
             </div>
           </div>
         </td>
@@ -76,6 +94,26 @@ function setupEventListeners() {
     document.addEventListener('click', () => {
       filterMenu.classList.remove('active');
     });
+  }
+
+  // Click outside close mobile menus
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.mobile-action-menu.active').forEach(menu => {
+      menu.classList.remove('active');
+    });
+  });
+}
+
+function toggleMobileMenu(event, id) {
+  event.stopPropagation();
+  // Close all other menus
+  document.querySelectorAll('.mobile-action-menu').forEach(m => {
+    if (m.id !== `mobileMenu-${id}`) m.classList.remove('active');
+  });
+  
+  const menu = document.getElementById(`mobileMenu-${id}`);
+  if (menu) {
+    menu.classList.toggle('active');
   }
 }
 
@@ -102,13 +140,13 @@ function togglePopup() {
 
 // Edit category
 function editCategory(categoryId) {
-  const category = categoriesData.find(c => c.id === categoryId);
+  const category = categoriesData.find(c => String(c.id) === String(categoryId));
   if (!category) {
     alert('❌ Category not found');
     return;
   }
 
-  currentEditingCategoryId = categoryId;
+  currentEditingCategoryId = parseInt(categoryId);
 
   document.querySelector('#editName').value = category.name;
   document.querySelector('#editDescription').value = category.description || '';
@@ -179,6 +217,7 @@ async function updateCategory() {
 
 // Delete category
 async function deleteCategoryById(categoryId) {
+  categoryId = parseInt(categoryId);
   if (!confirm('⚠️ Are you sure you want to delete this category?')) {
     return;
   }

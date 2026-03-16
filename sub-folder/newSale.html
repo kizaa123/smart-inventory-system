@@ -8,6 +8,77 @@
     <link rel="stylesheet" href="../styles.css">
     <script src="../api-client.js"></script>
     <title>New Sale - POS</title>
+    <style>
+        /* Receipt Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #receipt-printout, #receipt-printout * {
+                visibility: visible;
+            }
+            #receipt-printout {
+                display: block !important;
+                position: relative;
+                margin: 0 auto !important;
+                width: 100mm; /* Increased width */
+                padding: 15mm;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 14px; /* Increased font size */
+                line-height: 1.6;
+                color: #000;
+                background: white;
+            }
+            .modal, .layout, #backdrop, #popup, .menu-toggle {
+                display: none !important;
+            }
+        }
+
+        #receipt-printout {
+            display: none;
+        }
+
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 10px;
+        }
+
+        .receipt-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        .receipt-items th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+        }
+
+        .receipt-footer {
+            border-top: 1px dashed #000;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0; /* Increased margin */
+            text-align: left; /* Alignment to left */
+        }
+        
+        .receipt-info {
+            text-align: left; /* Alignment to left */
+            margin-bottom: 15px;
+        }
+
+        .receipt-info .receipt-row {
+            justify-content: flex-start; /* Align the info rows to start */
+            gap: 10px;
+        }
+    </style>
 </head>
 <body>
 
@@ -25,7 +96,10 @@
         <li class="nav-item"><a href="suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
         <li class="nav-item"><a href="staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
         <li class="nav-item"><a href="newSale.html" class="active"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
-        <li class="nav-item"><a href="#"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+        <li class="nav-item"><a href="contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
+        <li class="nav-item"><a href="#" id="bell-btn"><span class="bell-icon"><i class="fa-solid fa-bell"></i></span><span class="nav-text">notification</span><div class="badge" id="activity-badge"></div></a></li>
+        <li class="nav-item"><a href="#" class="theme-toggle-btn"><span><i class="fa-solid fa-moon theme-toggle-i"></i></span><span class="nav-text">Theme</span></a></li>
 
         <!-- the navigation logout buttun -->
         <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -94,6 +168,23 @@
           </div>
         </div>
       </div>
+      <footer class="site-footer">
+        <div class="footer-content">
+          <div class="footer-links">
+            <a href="../index.html"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            <a href="product.html"><i class="fa-solid fa-box"></i> Products</a>
+            <a href="categories.html"><i class="fa-solid fa-list"></i> Categories</a>
+            <a href="suppliers.html"><i class="fa-regular fa-truck"></i> Suppliers</a>
+            <a href="staff.html"><i class="fa-solid fa-users"></i> Staff</a>
+            <a href="newSale.html"><i class="fa-solid fa-file-invoice-dollar"></i> New Sale</a>
+            <a href="report.html"><i class="fa-sharp fa-solid fa-chart-line"></i> Report</a>
+            <a href="contact.html"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+          </div>
+          <div class="footer-bottom">
+            &copy; 2026 Stockmaster Inventory System. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </main> 
   </div>
 
@@ -109,23 +200,101 @@
 
           <div class="checkout-form">
               <label for="staffSelect">Served By (Staff)</label>
-              <select id="staffSelect" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px;">
+              <select id="staffSelect">
                 <option value="">Select Staff Member</option>
               </select>
 
               <label for="paymentMethod">Payment Method</label>
-              <select id="paymentMethod" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px; outline: none;">
+              <select id="paymentMethod">
                 <option value="Cash">Cash</option>
                 <option value="Card">Credit/Debit Card</option>
                 <option value="Mobile">Mobile Money</option>
               </select>
 
+              <label for="customerName">Customer Name (Optional)</label>
+              <input type="text" id="customerName" placeholder="Enter customer name">
+
               <button class="confirm-checkout-btn" onclick="completeSale()"><i class="fa-solid fa-check"></i> Complete Sale</button>
           </div>
           <button class="close-btn" onclick="closePopup()"><i class="fa-solid fa-xmark"></i></button>
       </div>
+
+      <!-- Success Content -->
+      <div class="popup-content pos-success-popup" id="content2" style="display: none; text-align: center; padding: 30px;">
+          <div style="font-size: 50px; color: #2e7d32; margin-bottom: 20px;">
+              <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h2 style="margin-bottom: 10px;">Sale Completed!</h2>
+          <p id="successMessage" style="margin-bottom: 20px; font-size: 16px; color: #555;"></p>
+          
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+              <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Order Number</div>
+              <div id="successOrderId" style="font-size: 24px; font-weight: 800; color: #2e7d32; margin-bottom: 15px;">#ORD-XXXXXX</div>
+              
+              <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Total Amount Paid</div>
+              <div id="successAmount" style="font-size: 24px; font-weight: 800; color: #1565c0;">GH₵0.00</div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: center;">
+              <button class="confirm-checkout-btn" onclick="printReceipt()" style="background: #5c5c5c; flex: 1;"><i class="fa-solid fa-print"></i> Print Receipt</button>
+              <button class="confirm-checkout-btn" onclick="closePopup()" style="background: #2f0464; flex: 1;">Done</button>
+          </div>
+      </div>
   </div>
 
+  <!-- Hidden Receipt Template for Printing -->
+  <div id="receipt-printout">
+      <div class="receipt-header">
+          <h2 style="margin: 0;">STOCKMASTER</h2>
+          <p style="margin: 5px 0;">Official Sales Receipt</p>
+      </div>
+      
+      <div class="receipt-info" style="font-size: 15px;">
+          <div class="receipt-row"><strong>Order ID:</strong> <span id="print-order-id" style="color: #2e7d32;"></span></div>
+          <div class="receipt-row"><strong>Date/Time:</strong> <span id="print-date"></span></div>
+          <div class="receipt-row"><strong>Server:</strong> <span id="print-server"></span></div>
+          <div id="print-customer-row" class="receipt-row" style="display: none;"><strong>Customer:</strong> <span id="print-customer"></span></div>
+      </div>
+
+      <table class="receipt-items">
+          <thead>
+              <tr>
+                  <th style="border-bottom: 1px solid #000;">Item</th>
+                  <th style="text-align: center; border-bottom: 1px solid #000;">Qty</th>
+                  <th style="text-align: right; border-bottom: 1px solid #000;">Total</th>
+              </tr>
+          </thead>
+          <tbody id="print-items-body">
+              <!-- Items go here -->
+          </tbody>
+      </table>
+
+      <div class="receipt-footer">
+          <div class="receipt-row" style="font-size: 16px; font-weight: bold; border-top: 1px solid #000; padding-top: 5px;">
+              <span>TOTAL PAID:</span>
+              <span id="print-total" style="color: #1565c0;"></span>
+          </div>
+          <p style="text-align: center; margin-top: 20px; font-style: italic; font-size: 10px;">Thank you for shopping with us!</p>
+      </div>
+  </div>
+
+<!-- Modal for recent activities -->
+<div id="activities-modal" class="modal">
+  <div class="modal-content" id="modal-content">
+    <span class="close">&times;</span>
+    <h3>Notifications</h3>
+    <div id="modal-recent-activities" class="group-activity">
+      <!-- Activities loaded dynamically -->
+    </div>
+    <div style="text-align: center; padding: 15px; border-top: 1px solid #a5a4a4; margin-top: 15px;">
+      <a href="activities.html" style="text-decoration: none; color: #4e4e4e; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+        View More <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+  <script src="../theme-toggle.js"></script>
   <script src="../index.js"></script>
   <script src="../sale-api.js"></script>
 </body>

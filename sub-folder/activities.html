@@ -10,7 +10,7 @@
     <style>
         .activities-container {
             padding: 2rem;
-            background: #f7f7f7;
+            background: #a19d9d;
             min-height: 100vh;
         }
         .activities-header {
@@ -22,7 +22,9 @@
         .invisible-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background-color: var(--card-bg);
+             backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -60,6 +62,19 @@
         .badge-category { background: #e1f5fe; color: #0288d1; }
         .badge-supplier { background: #e8f5e9; color: #388e3c; }
         
+        .invisible-table td {
+            text-align: left;
+            vertical-align: middle;
+            padding: 12px 15px;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+        
+        .invisible-table th {
+            text-align: left;
+            background-color: #f8f9fa;
+        }
+        
         .delete-btn {
             color: #d32f2f;
             cursor: pointer;
@@ -69,6 +84,29 @@
         .delete-btn:hover {
             transform: scale(1.2);
         }
+        .delete-all-btn {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s, transform 0.2s;
+            box-shadow: 0 2px 4px rgba(211, 47, 47, 0.2);
+        }
+        .delete-all-btn:hover {
+            background-color: #b71c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3);
+        }
+        .delete-all-btn:active {
+            transform: translateY(0);
+        }
         .back-link {
             text-decoration: none;
             color: #2f0464;
@@ -77,6 +115,20 @@
             gap: 8px;
             font-weight: 600;
             margin-bottom: 1rem;
+        }
+        
+        @media screen and (max-width: 767px) {
+            .delete-all-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                gap: 5px;
+            }
+            .delete-all-btn i {
+                font-size: 12px;
+            }
+            .activities-header h1 {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
@@ -93,6 +145,10 @@
                 <li class="nav-item"><a href="suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
                 <li class="nav-item"><a href="staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff</span></a></li>
                 <li class="nav-item"><a href="newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
+                <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
+                <li class="nav-item"><a href="contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
+                <li class="nav-item"><a href="#" id="bell-btn"><span class="bell-icon"><i class="fa-solid fa-bell"></i><span class="badge" id="activity-badge"></span></span><span class="nav-text">notification</span></a></li>
+                 <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
             </ul>
         </nav>
 
@@ -100,30 +156,70 @@
             <a href="../index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
             
             <!-- the navigation logout buttun -->
-            <button type="button" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+           
             
             <div class="activities-header">
-                <h1><i class="fa-solid fa-history"></i> Activity History</h1>
+                <h1> Activity History</h1>
+                <button class="delete-all-btn" onclick="confirmDeleteAll()">
+                    <i class="fa-solid fa-trash-can"></i> Delete All
+                </button>
             </div>
-
-            <table class="invisible-table">
+            <div style="width: 100%; overflow-x: auto; background: rgb(10, 10, 10); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <table class="invisible-table" style="table-layout: fixed; width: 100%; min-width: 800px;">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Type</th>
-                        <th>Activity Description</th>
-                        <th>Date & Time</th>
-                        <th>Action</th>
+                        <th style="width: 80px;">ID</th>
+                        <th style="width: 120px;">Type</th>
+                        <th style="width: auto;">Activity Description</th>
+                        <th style="width: 220px;">Date & Time</th>
+                        <th style="width: 80px;">Action</th>
                     </tr>
                 </thead>
                 <tbody id="activities-table-body">
                     <!-- Activities will be loaded here -->
                 </tbody>
             </table>
-        </main>
+            </div>
+      <footer class="site-footer">
+        <div class="footer-content">
+          <div class="footer-links">
+            <a href="../index.html"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            <a href="product.html"><i class="fa-solid fa-box"></i> Products</a>
+            <a href="categories.html"><i class="fa-solid fa-list"></i> Categories</a>
+            <a href="suppliers.html"><i class="fa-regular fa-truck"></i> Suppliers</a>
+            <a href="staff.html"><i class="fa-solid fa-users"></i> Staff</a>
+            <a href="newSale.html"><i class="fa-solid fa-file-invoice-dollar"></i> New Sale</a>
+            <a href="report.html"><i class="fa-sharp fa-solid fa-chart-line"></i> Report</a>
+            <a href="contact.html"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+          </div>
+          <div class="footer-bottom">
+            &copy; 2026 Stockmaster Inventory System. All rights reserved.
+          </div>
+        </div>
+      </footer>
+    </main>
+
+<!-- Modal for recent activities -->
+<div id="activities-modal" class="modal">
+  <div class="modal-content" id="modal-content">
+    <span class="close">&times;</span>
+    <h3><i class="fa-solid fa-clock-rotate-left"></i> Notifications</h3>
+    <div id="modal-recent-activities" class="group-activity">
+      <!-- Activities loaded dynamically -->
+    </div>
+    <div style="text-align: center; padding: 15px; border-top: 1px solid #eee; margin-top: 15px;">
+      <a href="#" onclick="closeModal()" style="text-decoration: none; color: #2f0464; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+        Close <i class="fa-solid fa-xmark"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
     </div>
 
+    <script src="../theme-toggle.js"></script>
     <script src="../api-client.js"></script>
     <script src="activities.js"></script>
+  <script src="../index.js"></script>
 </body>
 </html>
