@@ -102,6 +102,34 @@ function setupEventListeners() {
       menu.classList.remove('active');
     });
   });
+
+  // Enter key submission for Add Category
+  const addInputs = ['#addName', '#addDescription'];
+  addInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveCategory();
+        }
+      });
+    }
+  });
+
+  // Enter key submission for Edit Category
+  const editInputs = ['#editName', '#editDescription'];
+  editInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          updateCategory();
+        }
+      });
+    }
+  });
 }
 
 function toggleMobileMenu(event, id) {
@@ -135,6 +163,12 @@ function togglePopup() {
     content2.style.display = 'none';
     document.querySelector('#addName').value = '';
     document.querySelector('#addDescription').value = '';
+  } else {
+    // Ensure both are hidden when toggled off
+    content1.classList.remove('active');
+    content2.classList.remove('active');
+    content1.style.display = 'none';
+    content2.style.display = 'none';
   }
 }
 
@@ -158,7 +192,11 @@ function editCategory(categoryId) {
   
   popup.classList.add('active');
   backdrop.classList.add('active');
+  
+  // Explicitly manage classes to prevent "all forms popping up"
+  content1.classList.remove('active');
   content1.style.display = 'none';
+  content2.classList.add('active');
   content2.style.display = 'block';
 }
 
@@ -217,7 +255,6 @@ async function updateCategory() {
 
 // Delete category
 async function deleteCategoryById(categoryId) {
-  categoryId = parseInt(categoryId);
   if (!confirm('⚠️ Are you sure you want to delete this category?')) {
     return;
   }
@@ -238,14 +275,20 @@ function closePopup() {
   const content1 = document.getElementById('content1');
   const content2 = document.getElementById('content2');
   
-  popup.classList.remove('active');
-  backdrop.classList.remove('active');
-  content1.style.display = 'none';
-  content2.style.display = 'none';
+  if (popup) popup.classList.remove('active');
+  if (backdrop) backdrop.classList.remove('active');
+  if (content1) {
+    content1.classList.remove('active');
+    content1.style.display = 'none';
+  }
+  if (content2) {
+    content2.classList.remove('active');
+    content2.style.display = 'none';
+  }
   currentEditingCategoryId = null;
 }
 
-// Close popup on backdrop click
+// Close on backdrop click and Escape key
 document.addEventListener('DOMContentLoaded', function() {
   const backdrop = document.getElementById('backdrop');
   if (backdrop) {

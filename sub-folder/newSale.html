@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="../auth-guard.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="../styles.css">
     <script src="../api-client.js"></script>
@@ -11,33 +12,78 @@
     <style>
         /* Receipt Print Styles */
         @media print {
-            body * {
-                visibility: hidden;
+            :root {
+                --bg-color: #ffffff !important;
+                --card-bg: #ffffff !important;
+                --glass-bg: #ffffff !important;
             }
-            #receipt-printout, #receipt-printout * {
-                visibility: visible;
+
+            /* Hide all direct children of body EXCEPT the printout */
+            body > *:not(#receipt-printout) {
+                display: none !important;
             }
+
             #receipt-printout {
                 display: block !important;
-                position: relative;
+                position: static !important;
                 margin: 0 auto !important;
-                width: 100mm; /* Increased width */
-                padding: 15mm;
+                width: 80mm; /* Standard Thermal Receipt Width */
+                padding: 5mm;
                 font-family: 'Courier New', Courier, monospace;
-                font-size: 14px; /* Increased font size */
-                line-height: 1.6;
-                color: #000;
-                background: white;
+                font-size: 14px; 
+                line-height: 1.4;
+                color: #000 !important;
+                background: white !important;
+                border: none !important;
             }
-            .modal, .layout, #backdrop, #popup, .menu-toggle {
-                display: none !important;
+
+            /* Ensure table lines up properly natively */
+            #receipt-printout table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                position: static !important;
+            }
+
+            #receipt-printout tbody,
+            #receipt-printout tr,
+            #receipt-printout th,
+            #receipt-printout td {
+                background: transparent !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                overflow: visible !important;
+                page-break-inside: avoid !important;
+                color: #000 !important;
+            }
+
+            /* Force text inside the receipt to be black except green and blue highlights */
+            #receipt-printout * {
+                color: #000 !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+
+            #receipt-printout .green-text, 
+            #receipt-printout [style*="color: #2e7d32"],
+            #receipt-printout #print-order-id {
+                color: #2e7d32 !important;
+            }
+
+            #receipt-printout .blue-text,
+            #receipt-printout [style*="color: #1565c0"] {
+                color: #1565c0 !important;
             }
         }
 
         #receipt-printout {
             display: none;
         }
-
         .receipt-header {
             text-align: center;
             margin-bottom: 10px;
@@ -78,6 +124,112 @@
             justify-content: flex-start; /* Align the info rows to start */
             gap: 10px;
         }
+        /* ===== Camera Barcode / QR Scanner ===== */
+        .barcode-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            background: var(--card-bg, #f5f5f5);
+            border: 2px solid #7c3aed;
+            border-radius: 10px;
+            padding: 5px 8px 5px 12px;
+            transition: box-shadow 0.2s;
+        }
+        .barcode-row:focus-within { box-shadow: 0 0 0 3px rgba(124,58,237,0.18); }
+        .barcode-row i.bc-icon { color: #7c3aed; font-size: 17px; flex-shrink: 0; }
+        .barcode-row input {
+            border: none; outline: none; background: transparent;
+            flex: 1; font-size: 14px; color: var(--text-main, #222);
+            min-width: 0;
+        }
+        .barcode-row input::placeholder { color: #aaa; }
+        .bc-badge {
+            font-size: 12px; font-weight: 600; padding: 3px 9px;
+            border-radius: 6px; white-space: nowrap; display: none;
+        }
+        .bc-badge.show { display: inline-block; }
+        .bc-badge.ok  { background: #e8f5e9; color: #2e7d32; }
+        .bc-badge.err { background: #ffebee; color: #c62828; }
+        .scan-barcode-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: #fff;
+            border: none;
+            padding: 8px 13px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .scan-barcode-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
+        .scan-barcode-btn:active { transform: scale(0.97); }
+
+        #barcode-scanner-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+        }
+        #barcode-scanner-overlay.open { display: flex; }
+
+        #barcode-scanner-overlay h3 {
+            color: #fff;
+            font-size: 18px;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+        #qr-reader-cam {
+            width: min(92vw, 420px);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 3px solid #7c3aed;
+            box-shadow: 0 0 0 7px rgba(124,58,237,0.2), 0 10px 50px rgba(0,0,0,0.7);
+            animation: cam-pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes cam-pulse {
+            0%,100% { box-shadow: 0 0 0 7px rgba(124,58,237,0.2),0 10px 50px rgba(0,0,0,0.7); }
+            50%      { box-shadow: 0 0 0 16px rgba(124,58,237,0.06),0 10px 50px rgba(0,0,0,0.7); }
+        }
+        #cam-status-msg {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 9px;
+            background: rgba(255,255,255,0.1);
+            min-width: 280px;
+            text-align: center;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.3s;
+        }
+        #cam-status-msg.ok  { background: rgba(46,125,50,0.55); }
+        #cam-status-msg.err { background: rgba(198,40,40,0.55); }
+        .cam-close-btn {
+            background: rgba(255,255,255,0.14);
+            color: #fff;
+            border: none;
+            padding: 11px 30px;
+            border-radius: 9px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .cam-close-btn:hover { background: rgba(255,255,255,0.26); }
     </style>
 </head>
 <body>
@@ -95,6 +247,7 @@
         <li class="nav-item"><a href="categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
         <li class="nav-item"><a href="suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
         <li class="nav-item"><a href="staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
+        <li class="nav-item"><a href="users.html"><span><i class="fa-solid fa-user-shield"></i></span><span class="nav-text"> User Accounts</span></a></li>
         <li class="nav-item"><a href="newSale.html" class="active"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
         <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
         <li class="nav-item"><a href="contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
@@ -113,6 +266,7 @@
         <div class="pos-left">
           <div class="pos-header">
              <h1><i class="fa-solid fa-cash-register"></i> Point of Sale</h1>
+             <p id="welcomeName" style="margin-bottom: 5px; font-weight: 500; opacity: 0.8;">Welcome back</p>
              <p>Select items to add to the current order.</p>
           </div>
           
@@ -120,6 +274,18 @@
             <div class="pos-searchbar">
               <i class="fa-solid fa-search"></i>
               <input type="search" id="posSearch" placeholder="Search products by name or SKU...">
+            </div>
+
+            <!-- Dual barcode row: type barcode OR scan with camera -->
+            <div class="barcode-row">
+              <i class="fa-solid fa-barcode bc-icon"></i>
+              <input type="text" id="barcodeInput"
+                     placeholder="Type / paste barcode then press Enter"
+                     autocomplete="off" spellcheck="false">
+              <span class="bc-badge" id="bcBadge"></span>
+              <button class="scan-barcode-btn" onclick="openCamScanner()" title="Scan with camera">
+                <i class="fa-solid fa-camera"></i> Scan
+              </button>
             </div>
             
             <div class="pos-categories" id="posCategories">
@@ -260,7 +426,7 @@
           <thead>
               <tr>
                   <th style="border-bottom: 1px solid #000;">Item</th>
-                  <th style="text-align: center; border-bottom: 1px solid #000;">Qty</th>
+                  <th style="text-align: center; border-bottom: 1px solid #000;">Pkts</th>
                   <th style="text-align: right; border-bottom: 1px solid #000;">Total</th>
               </tr>
           </thead>
@@ -293,6 +459,14 @@
     </div>
   </div>
 </div>
+
+  <!-- Camera QR / Barcode Scanner Overlay -->
+  <div id="barcode-scanner-overlay">
+    <h3><i class="fa-solid fa-camera"></i> Scan Product Barcode</h3>
+    <div id="qr-reader-cam"></div>
+    <div id="cam-status-msg"><i class="fa-solid fa-rotate"></i> Point camera at the product barcode</div>
+    <button class="cam-close-btn" onclick="closeCamScanner()"><i class="fa-solid fa-xmark"></i> Close</button>
+  </div>
 
   <script src="../theme-toggle.js"></script>
   <script src="../index.js"></script>

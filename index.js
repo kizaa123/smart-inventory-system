@@ -64,11 +64,45 @@ async function checkLowStockForNotifications() {
   }
 }
 
+async function renderLowStockWidget() {
+  const container = document.getElementById('dash-low-stock-list');
+  if (!container) return;
+  try {
+    const products = await ProductAPI.getAll();
+    const lowStockItems = products.filter(p => p.stock_quantity < (p.low_stock_threshold || 10));
+    if (lowStockItems.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-muted); font-size: 14px;"><i class="fa-solid fa-check-circle" style="color: rgb(3, 133, 9);"></i> All stock levels are healthy.</p>';
+      return;
+    }
+    lowStockItems.sort((a, b) => a.stock_quantity - b.stock_quantity);
+    container.innerHTML = '';
+    lowStockItems.slice(0, 10).forEach(product => {
+      const item = document.createElement('div');
+      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--table-hover); border-radius: 8px; border: 1px solid var(--border-color); transition: transform 0.2s;';
+      item.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <span style="font-weight: 600; font-size: 14.5px; color: var(--text-main);">${product.name}</span>
+          <span style="font-size: 12px; color: var(--text-muted);">${product.sku}</span>
+        </div>
+        <div style="background-color: rgba(238, 8, 0, 0.1); color: #ee0800; padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 13px; box-shadow: 0 2px 4px rgba(238,8,0,0.1);">
+          ${product.stock_quantity} left
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  } catch (error) {
+    container.innerHTML = '<p style="color: #ee0800; font-size: 14px;">Error loading data.</p>';
+  }
+}
+
 // Initialize on dashboard load
 loadNotificationHistory();
 
 async function loadDashboardData() {
   try {
+    // Call the new widget render
+    renderLowStockWidget();
+
     const stats = await DashboardAPI.getStats();
 
     // Populate Top Cards
@@ -87,6 +121,11 @@ async function loadDashboardData() {
       document.getElementById('dash-total-products').textContent = stats.totalProducts || 0;
       document.getElementById('dash-total-categories').textContent = stats.totalCategories || 0;
       document.getElementById('dash-total-suppliers').textContent = stats.totalSuppliers || 0;
+      
+      const totalProfitEl = document.getElementById('dash-total-profit');
+      if (totalProfitEl) {
+        totalProfitEl.innerHTML = `GH<i class="fa-solid fa-cedi-sign"></i>${parseFloat(stats.totalProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+      }
 
       // Update Chart labels with totals
       const todayLabelEl = document.getElementById('chart-today-label');

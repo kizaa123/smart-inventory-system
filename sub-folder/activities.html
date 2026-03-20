@@ -36,7 +36,7 @@
         }
         .invisible-table th {
             background-color: #2f0464;
-            color: white;
+            color: rgb(8, 8, 8);
             font-weight: 600;
         }
         .invisible-table tr {
@@ -144,6 +144,7 @@
                 <li class="nav-item"><a href="categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
                 <li class="nav-item"><a href="suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
                 <li class="nav-item"><a href="staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff</span></a></li>
+                <li class="nav-item"><a href="users.html"><span><i class="fa-solid fa-user-shield"></i></span><span class="nav-text"> User Accounts</span></a></li>
                 <li class="nav-item"><a href="newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
                 <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
                 <li class="nav-item"><a href="contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
@@ -159,19 +160,18 @@
            
             
             <div class="activities-header">
-                <h1> Activity History</h1>
-                <button class="delete-all-btn" onclick="confirmDeleteAll()">
-                    <i class="fa-solid fa-trash-can"></i> Delete All
-                </button>
+                <h1><i class="fa-solid fa-bell"></i> System Activities</h1>
+                <button onclick="clearAllActivities()" class="delete-all-btn" style="background: #d32f2f;"><i class="fa-solid fa-trash-can"></i> Clear All</button>
             </div>
+            <h5 id="welcomeName" style="color: var(--text-muted); margin-bottom: 10px;">Welcome back</h5>
             <div style="width: 100%; overflow-x: auto; background: rgb(10, 10, 10); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                 <table class="invisible-table" style="table-layout: fixed; width: 100%; min-width: 800px;">
                 <thead>
                     <tr>
                         <th style="width: 80px;">ID</th>
-                        <th style="width: 120px;">Type</th>
+                        <th style="width: 200px;">Type</th>
                         <th style="width: auto;">Activity Description</th>
-                        <th style="width: 220px;">Date & Time</th>
+                        <th style="width: 200px;">Date & Time</th>
                         <th style="width: 80px;">Action</th>
                     </tr>
                 </thead>
@@ -188,6 +188,7 @@
             <a href="categories.html"><i class="fa-solid fa-list"></i> Categories</a>
             <a href="suppliers.html"><i class="fa-regular fa-truck"></i> Suppliers</a>
             <a href="staff.html"><i class="fa-solid fa-users"></i> Staff</a>
+            <a href="users.html"><i class="fa-solid fa-user-shield"></i> Users</a>
             <a href="newSale.html"><i class="fa-solid fa-file-invoice-dollar"></i> New Sale</a>
             <a href="report.html"><i class="fa-sharp fa-solid fa-chart-line"></i> Report</a>
             <a href="contact.html"><i class="fa-solid fa-envelope"></i> Contact Us</a>

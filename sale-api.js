@@ -8,13 +8,96 @@ let searchQuery = '';
 let lastSaleData = null; // Store data for the last successful sale for printing
 const TAX_RATE = 0; // Set to 0 for now, could be e.g. 0.08 for 8%
 
+// ==================== CAMERA BARCODE / QR SCANNER ====================
+
+let camScanner = null;       // Html5Qrcode instance
+let lastDetectedCode = null; // debounce
+
+function openCamScanner() {
+  const overlay = document.getElementById('barcode-scanner-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  setCamStatus('', '<i class="fa-solid fa-rotate fa-spin"></i> Starting camera…');
+
+  camScanner = new Html5Qrcode('qr-reader-cam');
+
+  Html5Qrcode.getCameras().then(cameras => {
+    if (!cameras || cameras.length === 0) {
+      setCamStatus('err', '<i class="fa-solid fa-triangle-exclamation"></i> No camera found on this device.');
+      return;
+    }
+
+    // Prefer rear camera (environment), fall back to first available
+    const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+
+    camScanner.start(
+      cam.id,
+      { fps: 12, qrbox: { width: 280, height: 280 } },
+      (decodedText) => onBarcodeDetected(decodedText),
+      () => { /* frame errors are normal – ignore */ }
+    ).then(() => {
+      setCamStatus('', '<i class="fa-solid fa-camera"></i> Point camera at the product barcode');
+    }).catch(err => {
+      setCamStatus('err', '<i class="fa-solid fa-triangle-exclamation"></i> Could not start camera. Please allow camera access.');
+      console.error('Camera start error:', err);
+    });
+
+  }).catch(err => {
+    setCamStatus('err', '<i class="fa-solid fa-triangle-exclamation"></i> Camera access denied or unavailable.');
+    console.error('getCameras error:', err);
+  });
+}
+
+async function onBarcodeDetected(code) {
+  // Debounce: same code is ignored for 3 seconds to avoid double-trigger
+  if (code === lastDetectedCode) return;
+  lastDetectedCode = code;
+  setTimeout(() => { lastDetectedCode = null; }, 3000);
+
+  // Just fill the text input and close the camera —
+  // the cashier reviews and presses Enter to add to cart
+  closeCamScanner();
+
+  const input = document.getElementById('barcodeInput');
+  if (input) {
+    input.value = code.trim();
+    input.focus();
+    // Highlight so the cashier clearly sees what was scanned
+    input.select();
+  }
+}
+
+
+function closeCamScanner() {
+  const overlay = document.getElementById('barcode-scanner-overlay');
+  if (overlay) overlay.classList.remove('open');
+  lastDetectedCode = null;
+
+  if (camScanner) {
+    camScanner.stop().catch(() => {}).finally(() => {
+      camScanner.clear();
+      camScanner = null;
+    });
+  }
+}
+
+function setCamStatus(type, html) {
+  const el = document.getElementById('cam-status-msg');
+  if (!el) return;
+  el.className = type ? type : '';
+  el.innerHTML = html;
+}
+
+// ==================== END CAMERA SCANNER ====================
+
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadData();
 });
 
+
 function setupEventListeners() {
-  // Search
+  // Product name / SKU search
   const searchInput = document.getElementById('posSearch');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -22,7 +105,53 @@ function setupEventListeners() {
       renderProducts();
     });
   }
+
+  // Barcode text input – press Enter to look up and add product
+  const barcodeInput = document.getElementById('barcodeInput');
+  if (barcodeInput) {
+    barcodeInput.addEventListener('keydown', async (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const code = barcodeInput.value.trim();
+      if (!code) return;
+      showBcBadge('', '');
+      try {
+        const product = await ProductAPI.getBySku(code);
+        if (!product || !product.id) { showBcBadge('err', '❌ Not found'); return; }
+        const local = productsData.find(p => p.id === product.id) || product;
+        addToCart(local);
+        showBcBadge('ok', `✅ ${product.name}`);
+        barcodeInput.value = '';
+      } catch (err) {
+        showBcBadge('err', err.message && err.message.includes('404') ? '❌ Not found' : '❌ Error');
+        console.error('Barcode input error:', err);
+      }
+    });
+  }
+
+  // Enter key submission for Checkout form
+  const checkoutInputs = ['#staffSelect', '#paymentMethod', '#customerName'];
+  checkoutInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          completeSale();
+        }
+      });
+    }
+  });
 }
+
+function showBcBadge(type, text) {
+  const el = document.getElementById('bcBadge');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'bc-badge' + (type ? ' show ' + type : '');
+  if (type) setTimeout(() => { el.className = 'bc-badge'; }, 2500);
+}
+
 
 async function loadData() {
   try {
@@ -109,7 +238,7 @@ function renderProducts() {
       <img src="${imageUrl}" alt="${product.name}" class="p-img" onerror="this.src='https://via.placeholder.com/150?text=${product.sku}'">
       <div class="p-name" title="${product.name}">${product.name}</div>
       <div class="p-price">GH<i class="fa-solid fa-cedi-sign"></i>${parseFloat(product.sell_price || 0).toFixed(2)}</div>
-      <div class="p-stock ${stockClass}">${product.stock_quantity} in stock</div>
+      <div class="p-stock ${stockClass}">${product.stock_quantity} Pkts | ${product.stock_quantity * ((product.pieces_per_packet && parseInt(product.pieces_per_packet) > 1) ? parseInt(product.pieces_per_packet) : 24)} pcs</div>
     `;
     grid.appendChild(card);
   });
@@ -137,7 +266,8 @@ function addToCart(product) {
       price: parseFloat(product.sell_price || 0),
       quantity: 1,
       image_url: product.image_url,
-      stock: product.stock_quantity
+      stock: product.stock_quantity,
+      pieces_per_packet: (product.pieces_per_packet && parseInt(product.pieces_per_packet) > 1) ? parseInt(product.pieces_per_packet) : 24
     });
   }
   
@@ -174,6 +304,24 @@ function clearCart() {
   }
 }
 
+function formatFraction(qty) {
+  const whole = Math.floor(qty);
+  const fraction = qty - whole;
+  let fractionStr = '';
+  if (Math.abs(fraction - 0.25) < 0.01) fractionStr = '1/4';
+  else if (Math.abs(fraction - 0.5) < 0.01) fractionStr = '1/2';
+  else if (Math.abs(fraction - 0.75) < 0.01) fractionStr = '3/4';
+  else if (fraction > 0) fractionStr = fraction.toFixed(2);
+  
+  if (whole === 0) {
+    return fractionStr || '0';
+  } else if (fractionStr) {
+    return `${whole} ${fractionStr}`;
+  } else {
+    return `${whole}`;
+  }
+}
+
 function updateCartUI() {
   const container = document.getElementById('cartItemsContainer');
   if (!container) return;
@@ -203,10 +351,13 @@ function updateCartUI() {
         <button class="c-remove" onclick="removeFromCart(${item.product_id})" title="Remove">
           <i class="fa-solid fa-times"></i>
         </button>
-        <div class="c-qty">
-          <button onclick="updateQuantity(${item.product_id}, -1)">-</button>
-          <span>${item.quantity}</span>
-          <button onclick="updateQuantity(${item.product_id}, 1)">+</button>
+        <div class="c-qty-wrapper" style="display: flex; flex-direction: column; align-items: flex-end;">
+          <div class="c-qty">
+            <button onclick="updateQuantity(${item.product_id}, -0.25)">-</button>
+            <span style="width: auto; padding: 0 10px;">${formatFraction(item.quantity)} Pkts</span>
+            <button onclick="updateQuantity(${item.product_id}, 0.25)">+</button>
+          </div>
+          <small style="font-size: 11px; color: #888; margin-top: 4px; font-weight: 600;">(${Math.round(item.quantity * ((item.pieces_per_packet && parseInt(item.pieces_per_packet) > 1) ? parseInt(item.pieces_per_packet) : 24))} pieces)</small>
         </div>
       </div>
     `;
@@ -220,7 +371,7 @@ function updateTotals() {
   let subtotal = 0;
   cart.forEach(item => {
     const price = parseFloat(item.price) || 0;
-    const qty = parseInt(item.quantity) || 0;
+    const qty = parseFloat(item.quantity) || 0;
     subtotal += price * qty;
   });
 
@@ -363,7 +514,10 @@ function printReceipt() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${item.name}</td>
-            <td style="text-align: center;">${item.quantity}</td>
+            <td style="text-align: center;">
+              ${formatFraction(item.quantity)} Pkts<br>
+              <span style="font-size: 10px; color: #555;">(${Math.round(item.quantity * ((item.pieces_per_packet && parseInt(item.pieces_per_packet) > 1) ? parseInt(item.pieces_per_packet) : 24))} pcs)</span>
+            </td>
             <td style="text-align: right;">${(item.price * item.quantity).toFixed(2)}</td>
         `;
         itemsBody.appendChild(tr);
@@ -371,8 +525,10 @@ function printReceipt() {
 
     document.getElementById("print-total").textContent = "GH₵" + lastSaleData.total;
 
-    // Trigger Print
-    window.print();
+    // Trigger Print with a delay to ensure the DOM is fully painted first
+    setTimeout(() => {
+        window.print();
+    }, 400);
 }
 
 function closePopup() {

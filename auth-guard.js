@@ -21,9 +21,9 @@
 
     if (user && (isLoginPage || isRootPath)) {
         // Already logged in, redirect to appropriate home page
-        let homePath = user.role === 'staff' ? 'sub-folder/product.html' : 'index.html';
+        let homePath = user.role === 'staff' ? 'sub-folder/newSale.html' : 'index.html';
         if (path.includes('/sub-folder/')) {
-            homePath = user.role === 'staff' ? 'product.html' : '../index.html';
+            homePath = user.role === 'staff' ? 'newSale.html' : '../index.html';
         }
         window.location.href = homePath;
         return;
@@ -32,11 +32,11 @@
     if (user) {
         // RBAC: Restricted pages for staff
         if (user.role === 'staff') {
-            const restrictedPages = ['index.html', 'categories.html', 'suppliers.html', 'staff.html', 'activities.html'];
+            const restrictedPages = ['index.html', 'categories.html', 'suppliers.html', 'staff.html', 'activities.html', 'product.html', 'users.html'];
             const isRestricted = restrictedPages.some(p => path.endsWith(p));
             
             if (isRestricted) {
-                let redirectPath = path.includes('/sub-folder/') ? 'product.html' : 'sub-folder/product.html';
+                let redirectPath = path.includes('/sub-folder/') ? 'newSale.html' : 'sub-folder/newSale.html';
                 window.location.href = redirectPath;
             }
         }
@@ -52,6 +52,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Update profile picture in sidebar
         updateProfileDisplay(user);
 
+        // Update welcome message if it exists
+        const welcomeEl = document.getElementById('welcomeName');
+        if (welcomeEl) {
+            const displayName = user.staff_name || user.username;
+            welcomeEl.textContent = `Welcome back, ${displayName}`;
+        }
+
         if (user.role === 'staff') {
             hideRestrictedUI();
         }
@@ -63,17 +70,18 @@ function updateProfileDisplay(user) {
     if (!sidebarHeader) return;
 
     // Use a robust fallback for the image src
+    const defaultName = user.role === 'admin' ? 'SA' : user.username;
     const profileImg = user.profile_image && user.profile_image !== '' 
         ? user.profile_image 
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=128`;
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(defaultName)}&background=2f0464&color=fff&size=128`;
 
     // Sidebar Profile (Desktop/Tablet)
     if (user.role === 'admin') {
         sidebarHeader.innerHTML = `
             <div class="profile-img-container" style="position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center;">
-                <img id="userProfilePic" src="${profileImg}" 
-                     style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);"
-                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=128'">
+                 <img id="userProfilePic" src="${profileImg}" 
+                      style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);"
+                      onerror="this.src='https://ui-avatars.com/api/?name=SA&background=2f0464&color=fff&size=128'">
                 <input type="file" id="profileUpload" accept="image/*" style="display: none;">
                 <span style="color: white; font-weight: 600; font-size: 1.1rem; margin-top: 5px;">System Admin</span>
             </div>
@@ -163,7 +171,16 @@ function handleProfileUpload(user) {
                     if (data.success) {
                         user.profile_image = base64Image;
                         localStorage.setItem('stockmaster_user', JSON.stringify(user));
-                        document.getElementById('userProfilePic').src = base64Image;
+                        
+                        // Update Desktop View
+                        const desktopPic = document.getElementById('userProfilePic');
+                        if (desktopPic) desktopPic.src = base64Image;
+                        
+                        // Update Mobile View
+                        const mobilePic = document.querySelector('.mobile-profile-pic');
+                        if (mobilePic) mobilePic.src = base64Image;
+                        
+                        alert('Profile picture updated successfully!');
                     }
                 } catch (err) {
                     console.error('Upload failed:', err);
@@ -178,9 +195,11 @@ function hideRestrictedUI() {
     // Hide sidebar links that staff shouldn't see
     const restrictedSelectors = [
         'a[href*="index.html"]',
+        'a[href*="product.html"]',
         'a[href*="categories.html"]',
         'a[href*="suppliers.html"]',
         'a[href*="staff.html"]',
+        'a[href*="users.html"]',
         'a[href*="activities.html"]',
         '.header h5' // "Welcome back, system Admin!" on dashboard (though they shouldn't be there)
     ];

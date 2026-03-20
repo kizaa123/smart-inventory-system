@@ -249,8 +249,17 @@
 
         /* Print Styles */
         @media print {
-            .sidebar, .menu-toggle, .bell-icon, .filter-bar, .tabs, .close-btn, #bell-btn {
+            :root {
+                --bg-color: #ffffff !important;
+                --card-bg: #ffffff !important;
+                --glass-bg: #ffffff !important;
+                --text-main: #000000 !important;
+            }
+            .sidebar, .menu-toggle, .bell-icon, .filter-bar, .tabs, .close-btn, #bell-btn, .charts-grid, .chart-card, #visual-tab {
                 display: none !important;
+            }
+            #data-tab {
+                display: block !important;
             }
             .main-content {
                 padding: 0 !important;
@@ -274,7 +283,16 @@
                 margin-bottom: 20px !important;
             }
             .metric-cards-container {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr !important;
+                gap: 20px !important;
+            }
+            .chart-card {
+                height: auto !important;
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -294,6 +312,7 @@
         <li class="nav-item"><a href="../sub-folder/categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
         <li class="nav-item"><a href="../sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
         <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
+        <li class="nav-item"><a href="users.html"><span><i class="fa-solid fa-user-shield"></i></span><span class="nav-text"> User Accounts</span></a></li>
         <li class="nav-item"><a href="../sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
         <li class="nav-item"><a href="report.html" class="active"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
         <li class="nav-item"><a href="contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
@@ -309,7 +328,12 @@
     <main class="main-content">
         <div class="report-header">
             <h1><i class="fa-sharp fa-solid fa-chart-line"></i> Sales Report</h1>
+            <div class="header-actions">
+                <button id="printReport"><i class="fa-solid fa-print"></i> Print</button>
+                <button id="exportExcel"><i class="fa-solid fa-file-excel"></i> Export</button>
+            </div>
         </div>
+        <h5 id="welcomeName" style="color: var(--text-muted); margin-bottom: 20px; margin-top: -15px;">Welcome back</h5>
 
         <!-- Metric Cards -->
         <div class="metric-cards-container">
@@ -339,6 +363,13 @@
                 <div class="metric-content">
                     <p>Top Selling Item</p>
                     <h3 id="metric-top-item">Loading...</h3>
+                </div>
+            </div>
+            <div class="metric-card" style=" border-left: 7px solid #2e7d32">
+                <div class="metric-icon" style="color: #2e7d32; background: #e8f5e9;"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+                <div class="metric-content">
+                    <p>Total Profit</p>
+                    <h3 id="metric-profit">GH₵0.00</h3>
                 </div>
             </div>
         </div>

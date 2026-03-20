@@ -37,6 +37,7 @@ async function apiCall(endpoint, method = 'GET', data = null) {
 const ProductAPI = {
   getAll: () => apiCall('/products'),
   getById: (id) => apiCall(`/products/${id}`),
+  getBySku: (sku) => apiCall(`/products/sku/${encodeURIComponent(sku)}`),
   create: (productData) => apiCall('/products', 'POST', productData),
   update: (id, productData) => apiCall(`/products/${id}`, 'PUT', productData),
   delete: (id) => apiCall(`/products/${id}`, 'DELETE')
@@ -96,4 +97,13 @@ const ReportAPI = {
     if (url.endsWith('&') || url.endsWith('?')) url = url.slice(0, -1);
     return apiCall(url);
   }
+};
+
+// ==================== USERS API ====================
+
+const UserAPI = {
+  getAll: () => apiCall('/users'),
+  create: (userData) => apiCall('/users', 'POST', userData),
+  update: (id, userData) => apiCall(`/users/${id}`, 'PUT', userData),
+  delete: (id) => apiCall(`/users/${id}`, 'DELETE')
 };

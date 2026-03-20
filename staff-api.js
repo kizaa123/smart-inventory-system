@@ -105,6 +105,34 @@ function setupEventListeners() {
       menu.classList.remove('active');
     });
   });
+
+  // Enter key submission for Add Staff
+  const addInputs = ['#addName', '#addEmail', '#addPhone', '#addPosition', '#addDepartment', '#addStatus'];
+  addInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveStaff();
+        }
+      });
+    }
+  });
+
+  // Enter key submission for Edit Staff
+  const editInputs = ['#editName', '#editEmail', '#editPhone', '#editPosition', '#editDepartment', '#editStatus'];
+  editInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          updateStaff();
+        }
+      });
+    }
+  });
 }
 
 function toggleMobileMenu(event, id) {
@@ -144,6 +172,11 @@ function togglePopup() {
     document.querySelector('#addPosition').value = '';
     document.querySelector('#addDepartment').value = '';
     document.querySelector('#addStatus').value = 'active';
+  } else {
+    content1.classList.remove('active');
+    content2.classList.remove('active');
+    content1.style.display = 'none';
+    content2.style.display = 'none';
   }
 }
 
@@ -174,6 +207,8 @@ function editStaff(staffId) {
   
   popup.classList.add('active');
   backdrop.classList.add('active');
+  
+  // Explicitly manage classes to prevent "all forms popping up"
   content1.classList.remove('active');
   content1.style.display = 'none';
   content2.classList.add('active');
@@ -299,12 +334,16 @@ function closePopup() {
   const content1 = document.getElementById('content1');
   const content2 = document.getElementById('content2');
   
-  popup.classList.remove('active');
-  backdrop.classList.remove('active');
-  content1.classList.remove('active');
-  content2.classList.remove('active');
-  content1.style.display = 'none';
-  content2.style.display = 'none';
+  if (popup) popup.classList.remove('active');
+  if (backdrop) backdrop.classList.remove('active');
+  if (content1) {
+    content1.classList.remove('active');
+    content1.style.display = 'none';
+  }
+  if (content2) {
+    content2.classList.remove('active');
+    content2.style.display = 'none';
+  }
   currentEditingStaffId = null;
 }
 

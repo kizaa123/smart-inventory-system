@@ -23,7 +23,8 @@
         <li class="nav-item"><a href="./sub-folder/product.html"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
         <li class="nav-item"><a href="./sub-folder/categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
         <li class="nav-item"><a href="./sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
-        <li class="nav-item"><a href="./sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
+        <li class="nav-item"><a href="./sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
+        <li class="nav-item"><a href="./sub-folder/users.html"><span><i class="fa-solid fa-user-shield"></i></span><span class="nav-text"> User Accounts</span></a></li>
         <li class="nav-item"><a href="sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
         <li class="nav-item"><a href="sub-folder/report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
         <li class="nav-item"><a href="sub-folder/contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
@@ -40,33 +41,37 @@
      <div class="header">
        <h1><i class="fa-solid fa-gauge"></i> Dashboard Overview</h1>
      </div> 
-      <h5>Welcome back, system Admin!</h5>
+      <h5 id="welcomeName">Welcome back, Vera Gyamfuah</h5>
 
       <!-- the overview of the manament system -->
        <section>
         
           <div class="overview-content">
-             <div class="total" style="background-color: rgb(1, 34, 219);">
+              <div class="total" style="background-color: rgb(1, 34, 219);">
                     <i class="fa-solid fa-cart-arrow-down"></i>
                     <h2>Today's Sale <br> <span id="dash-todays-sales">GH<i class="fa-solid fa-cedi-sign"></i>0.00</span></h2>
                </div>
-              <div class="total" style="background-color: rgb(3, 133, 9);">
+              <a href="sub-folder/product.html" class="total" style="background-color: rgb(3, 133, 9); text-decoration: none;">
                     <i class="fa-solid fa-box"></i>
                     <h2>Total Products<br> <span id="dash-total-products">0</span></h2>
-               </div>
-                <div class="total" style="background-color: #f86503;">
+               </a>
+                <a href="sub-folder/categories.html" class="total" style="background-color: #f86503; text-decoration: none;">
                     <i class="fa-solid fa-list"></i>
                     <h2>Categories<br> <span id="dash-total-categories">0</span></h2>
-                </div>
-                <div class="total" style="background-color: #772ca5;">
+                </a>
+                <a href="sub-folder/suppliers.html" class="total" style="background-color: #772ca5; text-decoration: none;">
                     <i class="fa-regular fa-truck"></i>
                     <h2>Suppliers<br> <span id="dash-total-suppliers">0</span></h2>
+                </a>
+                <div class="total" style="background-color: #0674be; text-decoration: none;">
+                    <i class="fa-solid fa-money-bill-trend-up"></i>
+                    <h2>Total Profit<br> <span id="dash-total-profit">GH₵0.00</span></h2>
                 </div>
           </div>
-          <div  class="resentSale">
+          <div class="resentSale" style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
               <!-- demo container -->
-              <div class="demo-data">
-                  <h3><i class="fa-solid fa-chart-area"></i> Sales Trend Analysis</h3>
+              <div class="demo-data" style="flex: 2; min-width: 300px; background-color: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 15px; padding: 25px; box-shadow: var(--shadow);">
+                  <h3 style="margin-bottom: 15px; color: var(--text-main);"><i class="fa-solid fa-chart-area" style="color: rgb(1, 34, 219);"></i> Sales Trend Analysis</h3>
                   <div class="container">
                     <h1 id="chart-comparison-header">
                       <i class="fa-regular fa-calendar"></i> 
@@ -80,8 +85,15 @@
                     </div>
                   </div>
               </div>
-                                  
-            
+              
+              <!-- Low Stock Alerts -->
+              <div class="low-stock-panel" style="flex: 1; min-width: 300px; background-color: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 15px; padding: 25px; box-shadow: var(--shadow); max-height: 470px; overflow-y: auto;">
+                  <h3 style="margin-bottom: 20px; color: #ee0800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; font-size: 18px;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock Alerts</h3>
+                  <div id="dash-low-stock-list" style="display: flex; flex-direction: column; gap: 12px;">
+                      <p style="color: var(--text-muted); font-size: 14px;">Loading alerts...</p>
+                  </div>
+              </div>
+          </div>
        </section>
        
        <footer class="site-footer">

@@ -132,6 +132,12 @@
                     <option value="staff">Staff/User</option>
                 </select>
             </div>
+            <div class="form-group" id="staffSelectGroup" style="display: none;">
+                <label for="staffId">Select Staff Profile</label>
+                <select id="staffId" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; background: white;">
+                    <option value="">-- Choose your name --</option>
+                </select>
+            </div>
             <button type="submit" class="login-btn">Login</button>
             <div id="errorMsg" class="error-msg">❌ Invalid username or password</div>
         </form>
@@ -155,18 +161,58 @@
             this.classList.toggle('fa-eye-slash');
         });
 
+        const roleSelect = document.getElementById('role');
+        const staffGroup = document.getElementById('staffSelectGroup');
+        const staffSelect = document.getElementById('staffId');
+
+        roleSelect.addEventListener('change', () => {
+            if (roleSelect.value === 'staff') {
+                staffGroup.style.display = 'block';
+                staffSelect.required = true;
+            } else {
+                staffGroup.style.display = 'none';
+                staffSelect.required = false;
+            }
+        });
+
+        // Fetch staff profiles on load
+        async function loadStaffProfiles() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/staff`);
+                if (res.ok) {
+                    const staffData = await res.json();
+                    staffData.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.name;
+                        staffSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load staff profiles:', e);
+            }
+        }
+        loadStaffProfiles();
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const role = document.getElementById('role').value;
+            const staffId = document.getElementById('staffId').value;
             const errorMsg = document.getElementById('errorMsg');
+
+            if (role === 'staff' && !staffId) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = '❌ Please select your staff profile';
+                return;
+            }
 
             try {
                 const response = await fetch(`${API_BASE_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password, selectedRole: role })
+                    body: JSON.stringify({ username, password, selectedRole: role, staffId })
                 });
 
                 const data = await response.json();

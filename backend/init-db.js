@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const dbPath = path.join(__dirname, 'stockmaster.db');
 const db = new sqlite3.Database(dbPath);
@@ -111,20 +112,25 @@ db.serialize(() => {
     )
   `);
 
-  // Insert default users only — system starts empty
+  // Insert default users (hashed passwords)
+  const adminHash = bcrypt.hashSync('StockMaster1122', 10);
+  const staffHash = bcrypt.hashSync('StockUser1133', 10);
+
   db.run(
-    "INSERT OR IGNORE INTO users (username, password, role) VALUES ('admin', 'admin123', 'admin')",
+    "INSERT OR IGNORE INTO users (username, password, role) VALUES ('admin', ?, 'admin')",
+    [adminHash],
     function(err) {
       if (err) console.error('Error inserting default admin:', err);
-      else console.log('✅ Default admin user created (admin/admin123)');
+      else console.log('✅ Default admin user created (admin/StockMaster1122)');
     }
   );
 
   db.run(
-    "INSERT OR IGNORE INTO users (username, password, role) VALUES ('staff', 'staff123', 'staff')",
+    "INSERT OR IGNORE INTO users (username, password, role) VALUES ('staff', ?, 'staff')",
+    [staffHash],
     function(err) {
       if (err) console.error('Error inserting default staff:', err);
-      else console.log('✅ Default staff user created (staff/staff123)');
+      else console.log('✅ Default staff user created (staff/StockUser1133)');
 
       db.close(() => {
         console.log('✅ Database initialization complete — system starts empty.');

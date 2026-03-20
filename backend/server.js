@@ -1,14 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcryptjs');
 const db = require('./database');
 
 const app = express();
 const path = require('path');
+// Port configuration
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
 
 // Middleware
@@ -86,15 +85,17 @@ app.get('/api/products/sku/:sku', (req, res) => {
 
 // POST create new product
 app.post('/api/products', (req, res) => {
-  const { sku, name, category_id, supplier_id, cost_price, sell_price, stock_quantity, description, image_url } = req.body;
+  const { sku, name, category_id, supplier_id, cost_price, sell_price, stock_quantity, pieces_per_packet, description, image_url } = req.body;
   
   if (!sku || !name || !category_id || !supplier_id) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  const p_per_packet = pieces_per_packet ? parseInt(pieces_per_packet) : 1;
+
   db.query(
-    'INSERT INTO products (sku, name, category_id, supplier_id, cost_price, sell_price, stock_quantity, description, image_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [sku, name, category_id, supplier_id, cost_price, sell_price, stock_quantity, description, image_url, 'active'],
+    'INSERT INTO products (sku, name, category_id, supplier_id, cost_price, sell_price, stock_quantity, pieces_per_packet, description, image_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [sku, name, category_id, supplier_id, cost_price, sell_price, stock_quantity, p_per_packet, description, image_url, 'active'],
     (err, results) => {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -108,17 +109,20 @@ app.post('/api/products', (req, res) => {
 
 // PUT update product
 app.put('/api/products/:id', (req, res) => {
-  const { name, category_id, supplier_id, cost_price, sell_price, stock_quantity, description, image_url } = req.body;
+  const { name, category_id, supplier_id, cost_price, sell_price, stock_quantity, pieces_per_packet, description, image_url } = req.body;
   
+  const p_per_packet = pieces_per_packet ? parseInt(pieces_per_packet) : 1;
+
   db.query(
-    'UPDATE products SET name = ?, category_id = ?, supplier_id = ?, cost_price = ?, sell_price = ?, stock_quantity = ?, description = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [name, category_id, supplier_id, cost_price, sell_price, stock_quantity, description, image_url, req.params.id],
+    'UPDATE products SET name = ?, category_id = ?, supplier_id = ?, cost_price = ?, sell_price = ?, stock_quantity = ?, pieces_per_packet = ?, description = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [name, category_id, supplier_id, cost_price, sell_price, stock_quantity, p_per_packet, description, image_url, req.params.id],
     (err, results) => {
       if (err) {
         res.status(500).json({ error: err.message });
       } else if (results.affectedRows === 0) {
         res.status(404).json({ error: 'Product not found' });
       } else {
+        logActivity('PRODUCT', `Product updated: ${name}`);
         res.json({ message: 'Product updated successfully' });
       }
     }
@@ -133,6 +137,7 @@ app.delete('/api/products/:id', (req, res) => {
     } else if (results.affectedRows === 0) {
       res.status(404).json({ error: 'Product not found' });
     } else {
+      logActivity('PRODUCT', `Product ID ${req.params.id} marked as inactive`);
       res.json({ message: 'Product deleted successfully' });
     }
   });
@@ -186,6 +191,7 @@ app.put('/api/categories/:id', (req, res) => {
       } else if (results.affectedRows === 0) {
         res.status(404).json({ error: 'Category not found' });
       } else {
+        logActivity('CATEGORY', `Category updated: ${name}`);
         res.json({ message: 'Category updated successfully' });
       }
     }
@@ -200,6 +206,7 @@ app.delete('/api/categories/:id', (req, res) => {
     } else if (results.affectedRows === 0) {
       res.status(404).json({ error: 'Category not found' });
     } else {
+      logActivity('CATEGORY', `Category ID ${req.params.id} permanently deleted`);
       res.json({ message: 'Category deleted successfully' });
     }
   });
@@ -253,6 +260,7 @@ app.put('/api/suppliers/:id', (req, res) => {
       } else if (results.affectedRows === 0) {
         res.status(404).json({ error: 'Supplier not found' });
       } else {
+        logActivity('SUPPLIER', `Supplier details updated: ${name}`);
         res.json({ message: 'Supplier updated successfully' });
       }
     }
@@ -267,6 +275,7 @@ app.delete('/api/suppliers/:id', (req, res) => {
     } else if (results.affectedRows === 0) {
       res.status(404).json({ error: 'Supplier not found' });
     } else {
+      logActivity('SUPPLIER', `Supplier ID ${req.params.id} permanently deleted`);
       res.json({ message: 'Supplier deleted successfully' });
     }
   });
@@ -320,6 +329,7 @@ app.put('/api/staff/:id', (req, res) => {
       } else if (results.affectedRows === 0) {
         res.status(404).json({ error: 'Staff member not found' });
       } else {
+        logActivity('STAFF', `Staff details updated: ${name} (${position})`);
         res.json({ message: 'Staff member updated successfully' });
       }
     }
@@ -334,6 +344,7 @@ app.delete('/api/staff/:id', (req, res) => {
     } else if (results.affectedRows === 0) {
       res.status(404).json({ error: 'Staff member not found' });
     } else {
+      logActivity('STAFF', `Staff ID ${req.params.id} marked as inactive`);
       res.json({ message: 'Staff member deleted successfully' });
     }
   });
@@ -414,31 +425,64 @@ app.post('/api/sales', (req, res) => {
 
 // Auth Endpoints
 app.post('/api/login', (req, res) => {
-  const { username, password, selectedRole } = req.body;
+  const { username, password, selectedRole, staffId } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password required' });
   }
 
-  db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, rows) => {
+  db.query('SELECT * FROM users WHERE username = ?', [username], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
     
     const user = rows[0];
+
+    // Verify hashed password
+    const passwordMatch = bcrypt.compareSync(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     // Verify chosen role matches DB role
     if (selectedRole && user.role !== selectedRole) {
       return res.status(401).json({ error: `User is not a/an ${selectedRole}` });
     }
 
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        profile_image: user.profile_image
-      }
-    });
+    if (selectedRole === 'staff' && staffId) {
+      db.query('SELECT name, position FROM staff WHERE id = ?', [staffId], (sErr, sRows) => {
+        if (!sErr && sRows.length > 0) {
+          const staffProfile = sRows[0];
+          user.staff_id = staffId;
+          user.staff_name = staffProfile.name;
+          user.staff_position = staffProfile.position;
+          logActivity('STAFF', `${staffProfile.name} (${staffProfile.position}) has login to the system`);
+        } else {
+          logActivity('STAFF', `${user.username} (${user.role}) has login to the system`);
+        }
+        res.json({
+          success: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            profile_image: user.profile_image,
+            staff_id: user.staff_id,
+            staff_name: user.staff_name,
+            staff_position: user.staff_position
+          }
+        });
+      });
+    } else {
+      logActivity('STAFF', `${user.username} (${user.role}) has login to the system`);
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          profile_image: user.profile_image
+        }
+      });
+    }
   });
 });
 
@@ -451,6 +495,76 @@ app.post('/api/users/profile-image', (req, res) => {
   db.run('UPDATE users SET profile_image = ? WHERE id = ?', [image, userId], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
+  });
+});
+
+// GET all users (Admin only)
+app.get('/api/users', (req, res) => {
+  db.query('SELECT id, username, role, profile_image, created_at FROM users ORDER BY username', (err, rows) => {
+    if (err) res.status(500).json({ error: err.message });
+    else res.json(rows);
+  });
+});
+
+// POST create new user
+app.post('/api/users', (req, res) => {
+  const { username, password, role } = req.body;
+  if (!username || !password || !role) {
+    return res.status(400).json({ error: 'Username, password, and role are required' });
+  }
+
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  db.query(
+    'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+    [username, hashedPassword, role],
+    (err, results) => {
+      if (err) {
+        if (err.message.includes('UNIQUE constraint failed')) {
+          res.status(400).json({ error: 'Username already exists' });
+        } else {
+          res.status(500).json({ error: err.message });
+        }
+      } else {
+        logActivity('STAFF', `New user account created: ${username} (${role})`);
+        res.json({ id: results.insertId, message: 'User created successfully' });
+      }
+    }
+  );
+});
+
+// PUT update user
+app.put('/api/users/:id', (req, res) => {
+  const { username, password, role } = req.body;
+  
+  if (password) {
+    // Update both username/role AND password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    db.query(
+      'UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?',
+      [username, hashedPassword, role, req.params.id],
+      (err, results) => {
+        if (err) res.status(500).json({ error: err.message });
+        else res.json({ message: 'User updated successfully (including password)' });
+      }
+    );
+  } else {
+    // Update only username and role
+    db.query(
+      'UPDATE users SET username = ?, role = ? WHERE id = ?',
+      [username, role, req.params.id],
+      (err, results) => {
+        if (err) res.status(500).json({ error: err.message });
+        else res.json({ message: 'User updated successfully' });
+      }
+    );
+  }
+});
+
+// DELETE user
+app.delete('/api/users/:id', (req, res) => {
+  db.query('DELETE FROM users WHERE id = ?', [req.params.id], (err, results) => {
+    if (err) res.status(500).json({ error: err.message });
+    else res.json({ message: 'User deleted successfully' });
   });
 });
 
@@ -493,15 +607,50 @@ app.get('/api/dashboard/stats', (req, res) => {
       db.query("SELECT STRFTIME('%H', sale_date) as hour, SUM(total_amount) as total FROM sales WHERE DATE(sale_date) = DATE('now', '-1 day') GROUP BY hour", (err, rows) => {
         err ? reject(err) : resolve(rows);
       });
+    }),
+    // Profit Calculation (Today)
+    new Promise((resolve, reject) => {
+      db.query(`
+        SELECT SUM((s.unit_price - p.cost_price) * s.quantity) as profit 
+        FROM sales s 
+        JOIN products p ON s.product_id = p.id 
+        WHERE DATE(s.sale_date) = DATE('now')
+      `, (err, rows) => {
+        err ? reject(err) : resolve(rows[0].profit || 0);
+      });
+    }),
+    // Profit Calculation (Yesterday)
+    new Promise((resolve, reject) => {
+      db.query(`
+        SELECT SUM((s.unit_price - p.cost_price) * s.quantity) as profit 
+        FROM sales s 
+        JOIN products p ON s.product_id = p.id 
+        WHERE DATE(s.sale_date) = DATE('now', '-1 day')
+      `, (err, rows) => {
+        err ? reject(err) : resolve(rows[0].profit || 0);
+      });
+    }),
+    // Profit Calculation (Total)
+    new Promise((resolve, reject) => {
+      db.query(`
+        SELECT SUM((s.unit_price - p.cost_price) * s.quantity) as profit 
+        FROM sales s 
+        JOIN products p ON s.product_id = p.id
+      `, (err, rows) => {
+        err ? reject(err) : resolve(rows[0].profit || 0);
+      });
     })
   ])
-  .then(([totalProducts, totalCategories, totalSuppliers, todaysSales, yesterdaysSales, hourlyToday, hourlyYesterday]) => {
+  .then(([totalProducts, totalCategories, totalSuppliers, todaysSales, yesterdaysSales, hourlyToday, hourlyYesterday, todaysProfit, yesterdaysProfit, totalProfit]) => {
     res.json({
       totalProducts,
       totalCategories,
       totalSuppliers,
       todaysSales: parseFloat(todaysSales).toFixed(2),
       yesterdaysSales: parseFloat(yesterdaysSales).toFixed(2),
+      todaysProfit: parseFloat(todaysProfit).toFixed(2),
+      yesterdaysProfit: parseFloat(yesterdaysProfit).toFixed(2),
+      totalProfit: parseFloat(totalProfit).toFixed(2),
       hourlyToday: hourlyToday.map(r => ({ ...r, hour: parseInt(r.hour) })),
       hourlyYesterday: hourlyYesterday.map(r => ({ ...r, hour: parseInt(r.hour) }))
     });
@@ -580,7 +729,7 @@ app.get('/api/reports/sales', (req, res) => {
   let query = `
     SELECT 
       s.id, s.order_id, s.quantity, s.unit_price, s.total_amount, s.sale_date,
-      p.name as product_name, c.name as category_name,
+      p.name as product_name, p.cost_price, c.name as category_name,
       staff.name as staff_name
     FROM sales s
     LEFT JOIN products p ON s.product_id = p.id

@@ -160,7 +160,7 @@ function renderProductTable(dataToRender = productsData) {
         <td>${product.name}</td>
         <td>${product.category_name || 'N/A'}</td>
         <td>GH<i class="fa-solid fa-cedi-sign"></i>${product.sell_price.toFixed(2)}</td>
-        <td><div class="${stockClass}">${product.stock_quantity}</div></td>
+        <td><div class="${stockClass}" style="width: auto; padding: 0 10px; border-radius: 6px;">${product.stock_quantity} Pkts (${product.stock_quantity * ((product.pieces_per_packet && parseInt(product.pieces_per_packet) > 1) ? parseInt(product.pieces_per_packet) : 24)} pcs)</div></td>
         <td>
           <div class="action-container">
             <!-- Desktop Action Buttons -->
@@ -219,6 +219,34 @@ function setupEventListeners() {
       menu.classList.remove('active');
     });
   });
+
+  // Enter key submission for Add Product
+  const addInputs = ['#barcode', '#addName', '#addCategory', '#addSupplier', '#addCost', '#addSell', '#addStock', '#addPieces'];
+  addInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveProduct();
+        }
+      });
+    }
+  });
+
+  // Enter key submission for Edit Product
+  const editInputs = ['#editName', '#editCategory', '#editSupplier', '#editCost', '#editSell', '#editStock', '#editPieces'];
+  editInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          updateProduct();
+        }
+      });
+    }
+  });
 }
 
 function toggleMobileMenu(event, id) {
@@ -246,10 +274,13 @@ function togglePopup() {
   backdrop.classList.toggle('active');
   
   if (popup.classList.contains('active')) {
+    content1.classList.add('active');
     content1.style.display = 'block';
+    content2.classList.remove('active');
     content2.style.display = 'none';
     // Clear form inputs
-    document.querySelector('#barcode').value = '';
+    const barcodeInput = document.querySelector('#barcode');
+    if (barcodeInput) barcodeInput.value = '';
     document.querySelector('#addName').value = '';
     const addImageInput = document.querySelector('#addImage');
     if (addImageInput) addImageInput.value = '';
@@ -258,6 +289,13 @@ function togglePopup() {
     document.querySelector('#addCost').value = '';
     document.querySelector('#addSell').value = '';
     document.querySelector('#addStock').value = '';
+    const addPiecesInput = document.querySelector('#addPieces');
+    if (addPiecesInput) addPiecesInput.value = '1';
+  } else {
+    content1.classList.remove('active');
+    content2.classList.remove('active');
+    content1.style.display = 'none';
+    content2.style.display = 'none';
   }
 }
 
@@ -280,6 +318,8 @@ function editProduct(productId) {
   document.querySelector('#editCost').value = product.cost_price;
   document.querySelector('#editSell').value = product.sell_price;
   document.querySelector('#editStock').value = product.stock_quantity;
+  const editPiecesEl = document.querySelector('#editPieces');
+  if (editPiecesEl) editPiecesEl.value = product.pieces_per_packet || 1;
 
   // Show edit popup
   const popup = document.getElementById('popup');
@@ -289,7 +329,11 @@ function editProduct(productId) {
   
   popup.classList.add('active');
   backdrop.classList.add('active');
+  
+  // Explicitly manage classes to prevent "all forms popping up"
+  content1.classList.remove('active');
   content1.style.display = 'none';
+  content2.classList.add('active');
   content2.style.display = 'block';
 }
 
@@ -302,6 +346,7 @@ async function saveProduct() {
   const costPrice = parseFloat(document.querySelector('#addCost')?.value);
   const sellPrice = parseFloat(document.querySelector('#addSell')?.value);
   const stock = parseInt(document.querySelector('#addStock')?.value);
+  const pieces = parseInt(document.querySelector('#addPieces')?.value) || 1;
 
   const imageInput = document.querySelector('#addImage');
   let imageUrl = '';
@@ -327,7 +372,8 @@ async function saveProduct() {
       supplier_id: parseInt(supplierId),
       cost_price: costPrice,
       sell_price: sellPrice,
-      stock_quantity: stock
+      stock_quantity: stock,
+      pieces_per_packet: pieces
     });
 
     alert('✅ Product added successfully!');
@@ -351,6 +397,7 @@ async function updateProduct() {
   const costPrice = parseFloat(document.querySelector('#editCost')?.value);
   const sellPrice = parseFloat(document.querySelector('#editSell')?.value);
   const stock = parseInt(document.querySelector('#editStock')?.value);
+  const pieces = parseInt(document.querySelector('#editPieces')?.value) || 1;
 
   const imageInput = document.querySelector('#editImage');
   let imageUrl = undefined;
@@ -384,7 +431,8 @@ async function updateProduct() {
       supplier_id: parseInt(supplierId),
       cost_price: costPrice,
       sell_price: sellPrice,
-      stock_quantity: stock
+      stock_quantity: stock,
+      pieces_per_packet: pieces
     });
 
     // Check if stock was increased and notify
@@ -424,10 +472,16 @@ function closePopup() {
   const content1 = document.getElementById('content1');
   const content2 = document.getElementById('content2');
   
-  popup.classList.remove('active');
-  backdrop.classList.remove('active');
-  content1.style.display = 'none';
-  content2.style.display = 'none';
+  if (popup) popup.classList.remove('active');
+  if (backdrop) backdrop.classList.remove('active');
+  if (content1) {
+    content1.classList.remove('active');
+    content1.style.display = 'none';
+  }
+  if (content2) {
+    content2.classList.remove('active');
+    content2.style.display = 'none';
+  }
   currentEditingProductId = null;
 }
 

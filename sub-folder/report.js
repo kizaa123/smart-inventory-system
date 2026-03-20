@@ -102,6 +102,13 @@ function updateMetricCards(data) {
     
     let topItem = "N/A";
     let maxQty = 0;
+    let totalProfit = 0;
+    
+    data.forEach(sale => {
+        const costPrice = sale.cost_price || 0;
+        totalProfit += (sale.unit_price - costPrice) * sale.quantity;
+    });
+
     for (const [product, qty] of Object.entries(productCounts)) {
         if (qty > maxQty) {
             maxQty = qty;
@@ -113,6 +120,11 @@ function updateMetricCards(data) {
     document.getElementById('metric-orders').textContent = totalOrders;
     document.getElementById('metric-aov').innerHTML = `GH<i class="fa-solid fa-cedi-sign"></i>${aov.toFixed(2)}`;
     document.getElementById('metric-top-item').textContent = topItem;
+    
+    const profitEl = document.getElementById('metric-profit');
+    if (profitEl) {
+        profitEl.innerHTML = `GH<i class="fa-solid fa-cedi-sign"></i>${totalProfit.toFixed(2)}`;
+    }
 }
 
 function updateTable(data) {
@@ -256,28 +268,49 @@ function updateCharts(data) {
         }
     });
 
-    // Doughnut Chart
+    // Category Bar Chart (Histogram)
     const catCtx = document.getElementById('categoryChart').getContext('2d');
-    const chartColors = ['#9d50ff', '#03a9f4', '#f86503', '#038509', '#e91e63'];
+    const chartBaseColors = ['#9d50ff', '#03a9f4', '#f86503', '#038509', '#e91e63'];
+    
+    // Auto-generate colors for any amount of categories
+    const dynamicBorders = Object.keys(salesByCategory).map((_, i) => chartBaseColors[i % chartBaseColors.length]);
+    const dynamicBackgrounds = dynamicBorders.map(c => {
+        const hex = c.replace('#', '');
+        return `rgba(${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}, 0.6)`;
+    });
+
     categoryChartInstance = new Chart(catCtx, {
-        type: 'doughnut',
+        type: 'bar',
         data: {
             labels: Object.keys(salesByCategory),
             datasets: [{
+                label: 'Revenue (GH₵)',
                 data: Object.values(salesByCategory),
-                backgroundColor: chartColors.slice(0, Object.keys(salesByCategory).length),
-                borderWidth: 0
+                backgroundColor: dynamicBackgrounds,
+                borderColor: dynamicBorders,
+                borderWidth: 2,
+                borderRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: theme.text
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: theme.grid },
+                    ticks: {
+                        color: theme.text,
+                        callback: function(value) { return 'GH₵' + value.toLocaleString(); }
                     }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: theme.text }
                 }
+            },
+            plugins: {
+                legend: { display: false } // Hidden because x-axis labels show categories cleanly
             }
         }
     });

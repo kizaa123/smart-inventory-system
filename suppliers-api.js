@@ -104,6 +104,34 @@ function setupEventListeners() {
       menu.classList.remove('active');
     });
   });
+
+  // Enter key submission for Add Supplier
+  const addInputs = ['#addName', '#addContact', '#addEmail', '#addPhone', '#addAddress'];
+  addInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveSupplier();
+        }
+      });
+    }
+  });
+
+  // Enter key submission for Edit Supplier
+  const editInputs = ['#editName', '#editContact', '#editEmail', '#editPhone', '#editAddress'];
+  editInputs.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          updateSupplier();
+        }
+      });
+    }
+  });
 }
 
 function toggleMobileMenu(event, id) {
@@ -140,6 +168,11 @@ function togglePopup() {
     document.querySelector('#addEmail').value = '';
     document.querySelector('#addPhone').value = '';
     document.querySelector('#addAddress').value = '';
+  } else {
+    content1.classList.remove('active');
+    content2.classList.remove('active');
+    content1.style.display = 'none';
+    content2.style.display = 'none';
   }
 }
 
@@ -166,7 +199,11 @@ function editSupplier(supplierId) {
   
   popup.classList.add('active');
   backdrop.classList.add('active');
+  
+  // Explicitly manage classes to prevent "all forms popping up"
+  content1.classList.remove('active');
   content1.style.display = 'none';
+  content2.classList.add('active');
   content2.style.display = 'block';
 }
 
@@ -258,10 +295,16 @@ function closePopup() {
   const content1 = document.getElementById('content1');
   const content2 = document.getElementById('content2');
   
-  popup.classList.remove('active');
-  backdrop.classList.remove('active');
-  content1.style.display = 'none';
-  content2.style.display = 'none';
+  if (popup) popup.classList.remove('active');
+  if (backdrop) backdrop.classList.remove('active');
+  if (content1) {
+    content1.classList.remove('active');
+    content1.style.display = 'none';
+  }
+  if (content2) {
+    content2.classList.remove('active');
+    content2.style.display = 'none';
+  }
   currentEditingSupplierId = null;
 }
 

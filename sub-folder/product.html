@@ -27,7 +27,8 @@
         <li class="nav-item"><a href="product.html" class="active"><span><i class="fa-solid fa-box"></i></span><span class="nav-text">Products</span></a></li>
         <li class="nav-item"><a href="../sub-folder/categories.html"><span><i class="fa-solid fa-list"></i></span><span class="nav-text">Categories</span></a></li>
         <li class="nav-item"><a href="../sub-folder/suppliers.html"><span><i class="fa-regular fa-truck"></i></span><span class="nav-text">Suppliers</span></a></li>
-        <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Stuff Management</span></a></li>
+        <li class="nav-item"><a href="../sub-folder/staff.html"><span><i class="fa-solid fa-users"></i></span><span class="nav-text"> Staff Management</span></a></li>
+        <li class="nav-item"><a href="users.html"><span><i class="fa-solid fa-user-shield"></i></span><span class="nav-text"> User Accounts</span></a></li>
         <li class="nav-item"><a href="../sub-folder/newSale.html"><span><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-text">New Sale</span></a></li>
         <li class="nav-item"><a href="report.html"><span><i class="fa-sharp fa-solid fa-chart-line"></i></span><span class="nav-text">Report</span></a></li>
         <li class="nav-item"><a href="contact.html"><span><i class="fa-solid fa-envelope"></i></span><span class="nav-text">Contact Us</span></a></li>
@@ -43,8 +44,9 @@
     <main class="main-content">
      <div class="header">
          <h1><i class="fa-solid fa-box"></i> Inventory</h1>
-      <button onclick="togglePopup()"><i class="fa-solid fa-plus"></i> Add Product</button>
+            <button onclick="togglePopup()"><i class="fa-solid fa-plus"></i> Add Product</button>
      </div>
+     <h5 id="welcomeName" style="color: var(--text-muted); margin-bottom: 10px;">Welcome back</h5>
      <div class="searchbar">
       <button style="border-radius: 7px 0 0  7px;">search</button>
       <input type="search" placeholder="search item here......">
@@ -120,8 +122,12 @@
                   </div>
                 </div>
                 <div class="stock">
-                  <label for="editStock">Stock</label><br>
+                  <label for="editStock">Stock (Pkts)</label><br>
                   <input type="number" id="editStock" min="1">
+                </div>
+                <div class="pieces">
+                  <label for="editPieces">Pieces/Pkt</label><br>
+                  <input type="number" id="editPieces" min="1" value="1">
                 </div>
               </div>
               <button  onclick="updateProduct()" id="saveProduct">Save Edit</button>
@@ -180,8 +186,12 @@
                   </div>
                 </div>
                 <div class="stock">
-                  <label for="addStock">Stock</label><br>
+                  <label for="addStock">Stock (Pkts)</label><br>
                   <input type="number" id="addStock" min="1">
+                </div>
+                <div class="pieces">
+                  <label for="addPieces">Pieces/Pkt</label><br>
+                  <input type="number" id="addPieces" min="1" value="1">
                 </div>
               </div>
               <button type="button" onclick="saveProduct()" id="saveProduct">Save Product</button>
@@ -199,6 +209,7 @@
           <a href="categories.html"><i class="fa-solid fa-list"></i> Categories</a>
           <a href="suppliers.html"><i class="fa-regular fa-truck"></i> Suppliers</a>
           <a href="staff.html"><i class="fa-solid fa-users"></i> Staff</a>
+          <a href="users.html"><i class="fa-solid fa-user-shield"></i> Users</a>
           <a href="newSale.html"><i class="fa-solid fa-file-invoice-dollar"></i> New Sale</a>
           <a href="report.html"><i class="fa-sharp fa-solid fa-chart-line"></i> Report</a>
           <a href="contact.html"><i class="fa-solid fa-envelope"></i> Contact Us</a>
