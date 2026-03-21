@@ -38,12 +38,12 @@
       <h5 id="welcomeName" style="color: var(--text-muted); margin-bottom: 10px;">Welcome back</h5>
 
       <div class="searchbar">
-        <button style="border-radius: 7px 0 0 7px;">Search</button>
-        <input type="search" id="userSearch" placeholder="Search by username...">
+        <button style="border-radius: 8px 0 0 8px;">Search</button>
+        <input type="search" id="userSearch" placeholder="Search by username..." style="border-radius: 0 8px 8px 0;">
       </div>
 
       <section>
-        <table class="supplire-table">
+        <table class="user-table">
           <thead>
             <tr class="icon">
               <th><i class="fa-solid fa-user"></i> Username</th>
@@ -64,23 +64,23 @@
         <!-- Add User Form -->
         <div class="popup-content" id="content1">
           <h2>Create New User</h2>
-          <div class="product-form">
+          <div class="product-form" style="width: 500px; max-width: 90vw;">
             <div class="bar-proName">
               <div class="barcode" style="width: 100%;">
                 <label for="addUsername">Username</label><br>
-                <input type="text" id="addUsername" placeholder="Enter username">
+                <input type="text" id="addUsername" placeholder="Enter username" style="margin-top: 10px;">
               </div>
             </div>
             <div class="bar-proName">
               <div class="barcode" style="width: 100%;">
                 <label for="addPassword">Password</label><br>
-                <input type="password" id="addPassword" placeholder="Enter password">
+                <input type="password" id="addPassword" placeholder="Enter password" style="margin-top: 10px;">
               </div>
             </div>
             <div class="ctg-supply">
               <div class="supplire" style="width: 100%;">
                 <label for="addRole">Role</label><br>
-                <select id="addRole">
+                <select id="addRole" style="margin-top: 10px;">
                   <option value="admin">Admin</option>
                   <option value="staff">Staff</option>
                 </select>
@@ -93,24 +93,24 @@
 
         <!-- Edit User Form -->
         <div class="popup-content" id="content2">
-          <h2>Edit User Account</h2>
-          <div class="product-form">
+          <h3>Edit User Account</h3>
+          <div class="product-form"  style="width: 500px; max-width: 90vw;">
             <div class="bar-proName">
               <div class="barcode" style="width: 100%;">
                 <label for="editUsername">Username</label><br>
-                <input type="text" id="editUsername" placeholder="Enter username">
+                <input type="text" id="editUsername" placeholder="Enter username" style="margin-top: 10px;">
               </div>
             </div>
             <div class="bar-proName">
               <div class="barcode" style="width: 100%;">
                 <label for="editPassword">New Password (leave blank to keep current)</label><br>
-                <input type="password" id="editPassword" placeholder="Enter new password">
+                <input type="password" id="editPassword" placeholder="Enter new password" style="margin-top: 10px;">
               </div>
             </div>
             <div class="ctg-supply">
               <div class="supplire" style="width: 100%;">
                 <label for="editRole">Role</label><br>
-                <select id="editRole">
+                <select id="editRole" style="margin-top: 10px;">
                   <option value="admin">Admin</option>
                   <option value="staff">Staff</option>
                 </select>

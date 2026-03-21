@@ -67,7 +67,7 @@
                   <th><i class="fa-solid fa-layer-group"></i> Catogorie</th>
                   <th><i class="fa-solid fa-sack-dollar"> </i>Price (GH<i class="fa-solid fa-cedi-sign"></i>)</th>
                   <th><i class="fa-solid fa-list-ol"></i> Stock</th>
-                  <th><i class="fa-solid fa-pen-clip"></i> Action</th>
+                  <th style="width: 120px;"><i class="fa-solid fa-pen-clip"></i> Action</th>
                </tr>
             </thead>
             <tbody>
@@ -125,9 +125,9 @@
                   <label for="editStock">Stock (Pkts)</label><br>
                   <input type="number" id="editStock" min="1">
                 </div>
-                <div class="pieces">
+                <div class="pieces stock">
                   <label for="editPieces">Pieces/Pkt</label><br>
-                  <input type="number" id="editPieces" min="1" value="1">
+                  <input type="number" id="editPieces" min="1" value="1" style="width: 90px;">
                 </div>
               </div>
               <button  onclick="updateProduct()" id="saveProduct">Save Edit</button>
@@ -189,9 +189,9 @@
                   <label for="addStock">Stock (Pkts)</label><br>
                   <input type="number" id="addStock" min="1">
                 </div>
-                <div class="pieces">
+                <div class="pieces stock">
                   <label for="addPieces">Pieces/Pkt</label><br>
-                  <input type="number" id="addPieces" min="1" value="1">
+                  <input type="number" id="addPieces" min="1" value="1" style="width: 90px;">
                 </div>
               </div>
               <button type="button" onclick="saveProduct()" id="saveProduct">Save Product</button>

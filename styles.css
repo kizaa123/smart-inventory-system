@@ -3,15 +3,15 @@
   --sidebar-bg: #3c0183;
   --card-bg: #ffffff;
   --text-main: #333333;
-  --text-muted: #666666;
+  --text-muted: #494949;
   --border-color: #dddddd;
   --accent-color: #7510e7;
   --sidebar-text: #b8b8b8;
   --sidebar-active: #f87903;
   --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(0, 0, 0, 0.203);
+  --glass-border: rgba(0, 0, 0, 0.13);
   --glass-blur: blur(0px);
-  --shadow: 0 4px 15px rgba(0, 0, 0, 0.189);
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.075);
   --header-text: #3d3d3d;
   --table-head-bg: #f8f8f8;
   --table-hover: #f1f1f1;
@@ -40,6 +40,7 @@
 [data-theme='dark'] select option {
   color: #000000 !important;
   background-color: #ffffff !important;
+  
 }
 
 * {
@@ -456,7 +457,12 @@ tr:hover {
   align-items: center;
   position: relative;
 }
-
+.searchbar button {
+  border-radius: 8px 0 0 8px;
+}
+.searchbar input {
+  border-radius: 0;
+}
 .filter-menu {
   position: absolute;
   top: 100%;
@@ -718,6 +724,7 @@ table td {
   padding: 15px;
   color: var(--text-main);
   border-bottom: 1px solid var(--border-color);
+  text-transform: capitalize;
 }
 
 table tr:hover {
@@ -756,6 +763,34 @@ table tr:hover {
   font-weight: 600;
 }
 
+.user-table{
+  width: 100%;
+  background-color: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  padding: 5px;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+.user-table thead tr {
+  background-color: var(--table-head-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+.user-table th {
+  padding: 15px;
+  text-align: center;
+  color: var(--header-text);
+  font-weight: 600;
+}
+.user-table td {
+  padding: 15px;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+  text-transform: capitalize;
+  text-align: center;
+}
 .supplire-table td {
   text-align: start;
   border: none;
@@ -787,17 +822,23 @@ table tr:hover {
   width: 100px;
 }
 
-.supplire-table th:nth-child(7) {
-  width: 80px;
-}
+
 
 .supplire-table th {
-  text-align: start;
+  text-align: center;
   border: none;
 }
-
+.supplire-table td {
+  text-align: center;
+}
+.categories-table th {
+  text-align: center;
+}
+.categories-table td {
+  text-align: center;
+}
 .categories-table th:nth-child(1) {
-  width: 80px;
+  width: 50px;
 }
 
 .categories-table td:nth-child(2) {
@@ -805,23 +846,22 @@ table tr:hover {
 }
 
 .categories-table th:nth-child(2) {
-  width: 200px;
+  width: 250px;
 }
-
-.categories-table th:nth-child(1) {
-  width: 200px;
-}
-
 .categories-table td:nth-child(1) {
   font-size: 20px;
   color: var(--accent-color);
-  width: 80px;
+  width: 50px;
 }
 
 .categories-table td:nth-child(4) {
   font-size: 16px;
   font-weight: 500;
-  width: 300px;
+  width: 180px;
+}
+
+.categories-table th:nth-child(4) {
+  width: 150px;
 }
 
 .categories-table td:nth-child(3) {
@@ -832,11 +872,11 @@ table tr:hover {
 
 .categories-table td:nth-child(5) {
   text-align: center;
-  width: 80px;
+  width: 100px;
 }
 
 .categories-table th:nth-child(5){
-  width: 80px;
+  width: 100px;
 }
 
 .categories-table .action {
@@ -2256,7 +2296,6 @@ select:focus {
     bottom: 0;
     z-index: 100;
     box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
-    background: white;
     margin-top: auto;
   }
 }
@@ -2728,14 +2767,30 @@ select:focus {
 
 @media screen and (max-width: 767px) {
   .footer-links {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+    gap: 10px !important;
+    justify-items: center !important;
   }
 
   .footer-links a {
-    text-align: center;
-    align-items: center;
+    flex: none !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+    background: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--shadow) !important;
+    transition: all 0.3s !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+  }
+
+  .footer-links a:hover {
+    background: var(--table-hover) !important;
+    transform: translateY(-2px) !important;
+    color: var(--sidebar-active) !important;
   }
 
   .contact-card {

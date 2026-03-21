@@ -106,6 +106,10 @@ async function confirmDeleteAll() {
     }
 }
 
+function clearAllActivities() {
+    confirmDeleteAll();
+}
+
 function toggleMobileMenu(event, id) {
     event.stopPropagation();
     // Close all other menus
