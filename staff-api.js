@@ -11,11 +11,30 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load all staff from API
 async function loadStaff() {
   try {
-    staffData = await StaffAPI.getAll();
+    const staffList = await StaffAPI.getAll();
+    const onlineResponse = await fetch('http://localhost:5000/api/users/active');
+    const onlineUsers = await onlineResponse.json();
+    
+    staffData = staffList.map(staff => {
+      const sname = (staff.name || '').toLowerCase().replace(/ /g, '');
+      const semail = (staff.email || '').toLowerCase();
+      const match = onlineUsers.some(u => {
+        const uname = (u.username || '').toLowerCase().replace(/ /g, '');
+        return uname === sname || uname.includes(semail) || semail.includes(uname);
+      });
+      console.log(`Staff "${staff.name}" (${staff.email}) is_online:`, match);
+      return {
+        ...staff,
+        is_online: match
+      };
+    });
+    
     renderStaffTable();
   } catch (error) {
     console.error('Failed to load staff:', error);
-    // Don't show alert on every load - only log the error
+    // Fallback to basic load
+    staffData = await StaffAPI.getAll();
+    renderStaffTable();
   }
 }
 
@@ -42,7 +61,12 @@ function renderStaffTable(dataToRender = staffData) {
       const statusClass = member.status === 'active' ? 'stock' : 'low';
       
       row.innerHTML = `
-        <td><img src="${member.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`}" alt="${member.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random'"></td>
+        <td>
+          <div class="profile-pic-container" style="position: relative; display: inline-block;">
+            <img src="${member.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`}" alt="${member.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random'">
+            <span class="status-dot ${member.is_online ? 'online' : ''}"></span>
+          </div>
+        </td>
         <td>${member.name}</td>
         <td>${member.email || 'N/A'}</td>
         <td>${member.phone || 'N/A'}</td>

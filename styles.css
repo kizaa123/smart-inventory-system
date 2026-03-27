@@ -1049,6 +1049,28 @@ td img {
   border: 3px solid #6208cfcc;
 }
 
+.supplire-table .profile-pic-container {
+  position: relative;
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+
+.supplire-table .profile-pic-container img {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.supplire-table .profile-pic-container .status-dot {
+  position: absolute !important;
+  bottom: -2px !important;
+  right: -2px !important;
+  width: 18px !important;
+  height: 18px !important;
+  border: 3px solid var(--card-bg) !important;
+  z-index: 10;
+}
+
 .searchbar {
   position: relative;
   width: 100%;
@@ -2340,6 +2362,30 @@ select:focus {
 }
 
 /* Profile Picture Status Positioning */
+/* Staff table photo status dot */
+table .profile-pic-container {
+  position: relative;
+  display: inline-block;
+}
+
+table .profile-pic-container img {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 3px solid var(--glass-border) !important;
+}
+
+table .profile-pic-container .status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--card-bg);
+  z-index: 1;
+}
+
 .profile-pic-container {
   position: relative;
   display: inline-block;
