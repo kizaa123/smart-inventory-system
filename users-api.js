@@ -31,8 +31,9 @@ function renderUsers(users) {
         console.log('User data:', user); // Debug role
         const userRole = user.role || 'N/A';
         const gradient = userRole === 'admin' ? 'linear-gradient(135deg, #772ca5 0%, #ab47bc 100%)' : 'linear-gradient(135deg, #03a9f4 0%, #29b6f6 100%)';
+        const statusDot = user.is_online ? '<span class="status-dot online" style="margin-right: 8px;"></span>' : '<span class="status-dot" style="margin-right: 8px;"></span>';
         tr.innerHTML = `
-            <td style="font-weight: 600;">${user.username}</td>
+            <td style="font-weight: 600; display: flex; align-items: center;">${statusDot} ${user.username}</td>
             <td style="padding: 0;"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: ${gradient}; color: white; border-radius: 50px; font-weight: 700; font-size: 14px; text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2); white-space: nowrap; transition: all 0.3s ease;">${userRole}</span></td>
             <td>${formattedDate}</td>
             <td>

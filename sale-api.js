@@ -12,8 +12,12 @@ const TAX_RATE = 0; // Set to 0 for now, could be e.g. 0.08 for 8%
 
 let camScanner = null;       // Html5Qrcode instance
 let lastDetectedCode = null; // debounce
+let camScannerTargetInput = 'barcodeInput';
+let camScannerAutoSubmit = false;
 
-function openCamScanner() {
+function openCamScanner(targetInputId = 'barcodeInput', autoSubmit = false) {
+  camScannerTargetInput = targetInputId;
+  camScannerAutoSubmit = autoSubmit;
   const overlay = document.getElementById('barcode-scanner-overlay');
   if (!overlay) return;
   overlay.classList.add('open');
@@ -32,7 +36,13 @@ function openCamScanner() {
 
     camScanner.start(
       cam.id,
-      { fps: 12, qrbox: { width: 280, height: 280 } },
+      { 
+        fps: 60, 
+        qrbox: { width: 380, height: 120 }, 
+        aspectRatio: 1.77, 
+        disableFlip: true,
+        formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_39 ]
+      },
       (decodedText) => onBarcodeDetected(decodedText),
       () => { /* frame errors are normal – ignore */ }
     ).then(() => {
@@ -51,19 +61,40 @@ function openCamScanner() {
 async function onBarcodeDetected(code) {
   // Debounce: same code is ignored for 3 seconds to avoid double-trigger
   if (code === lastDetectedCode) return;
+
+  // For the return modal, ONLY accept codes that look like Order IDs
+  if (camScannerTargetInput === 'returnItemSku') {
+    if (!code.toUpperCase().includes('ORD-') && !code.toUpperCase().includes('RET-')) {
+      // Ignore product barcodes or other codes while in return mode
+      setCamStatus('warn', `<i class="fa-solid fa-circle-info"></i> Input skipped: "${code}" (Not an Order ID)`);
+      return;
+    }
+  }
+
   lastDetectedCode = code;
   setTimeout(() => { lastDetectedCode = null; }, 3000);
 
   // Just fill the text input and close the camera —
-  // the cashier reviews and presses Enter to add to cart
   closeCamScanner();
 
-  const input = document.getElementById('barcodeInput');
+  const statusEl = document.getElementById('cam-status-msg');
+  if (statusEl) {
+    statusEl.innerHTML = '<i class="fa-solid fa-check-circle" style="color:#2e7d32;"></i> Scan Successful!';
+    statusEl.classList.add('success-flash');
+    if (navigator.vibrate) navigator.vibrate(100); // Haptic feedback if available
+    setTimeout(() => statusEl.classList.remove('success-flash'), 1000);
+  }
+
+  const input = document.getElementById(camScannerTargetInput);
   if (input) {
     input.value = code.trim();
     input.focus();
-    // Highlight so the cashier clearly sees what was scanned
     input.select();
+    
+    if (camScannerAutoSubmit && camScannerTargetInput === 'returnItemSku') {
+      // Small delay just to let UI settle
+      setTimeout(() => searchReturnByOrderId(), 100);
+    }
   }
 }
 
@@ -393,14 +424,24 @@ function updateTotals() {
 
 function populateStaffSelect() {
   const select = document.getElementById('staffSelect');
-  if (!select) return;
-  select.innerHTML = '<option value="">Select Staff Member</option>';
+  const returnSelect = document.getElementById('returnStaffSelect');
+  
+  if (select) select.innerHTML = '<option value="">Select Staff Member</option>';
+  if (returnSelect) returnSelect.innerHTML = '<option value="">Select Staff Member</option>';
   
   staffData.forEach(staff => {
-    const option = document.createElement('option');
-    option.value = staff.id;
-    option.textContent = staff.name;
-    select.appendChild(option);
+    if (select) {
+      const option = document.createElement('option');
+      option.value = staff.id;
+      option.textContent = staff.name;
+      select.appendChild(option);
+    }
+    if (returnSelect) {
+      const option2 = document.createElement('option');
+      option2.value = staff.id;
+      option2.textContent = staff.name;
+      returnSelect.appendChild(option2);
+    }
   });
 }
 
@@ -450,7 +491,7 @@ async function completeSale() {
     const content2 = document.getElementById('content2');
     if (content2) {
       document.getElementById('successMessage').textContent = response.message;
-      document.getElementById('successOrderId').textContent = '#' + response.order_id;
+      document.getElementById('successOrderId').textContent = response.order_id;
       
       // Calculate total for display
       let totalValue = 0;
@@ -498,7 +539,7 @@ function printReceipt() {
 
     // Populate Receipt
     document.getElementById("print-date").textContent = lastSaleData.date;
-    document.getElementById("print-order-id").textContent = "#" + lastSaleData.order_id;
+    document.getElementById("print-order-id").textContent = lastSaleData.order_id;
     document.getElementById("print-server").textContent = lastSaleData.staff_name;
     
     if (lastSaleData.customer_name) {
@@ -506,6 +547,16 @@ function printReceipt() {
         document.getElementById("print-customer-row").style.display = "flex";
     } else {
         document.getElementById("print-customer-row").style.display = "none";
+    }
+
+    const actionRow = document.getElementById("print-action-row");
+    if (actionRow) {
+        if (lastSaleData.action) {
+            document.getElementById("print-action").textContent = lastSaleData.action;
+            actionRow.style.display = "flex";
+        } else {
+            actionRow.style.display = "none";
+        }
     }
 
     const itemsBody = document.getElementById("print-items-body");
@@ -524,6 +575,19 @@ function printReceipt() {
     });
 
     document.getElementById("print-total").textContent = "GH₵" + lastSaleData.total;
+    
+    // Populate Barcode (Offline-Ready SVG)
+    const barcodeEl = document.getElementById("print-barcode");
+    const barcodeFooterEl = document.getElementById("print-order-id-footer");
+    
+    if (barcodeEl && window.BarcodeGen) {
+        // High density barcode with maximum thickness for thermal paper
+        barcodeEl.innerHTML = window.BarcodeGen.generateSVG(lastSaleData.order_id, { height: 50, width: 2.0 });
+    }
+    
+    if (barcodeFooterEl) {
+        barcodeFooterEl.textContent = lastSaleData.order_id;
+    }
 
     // Trigger Print with a delay to ensure the DOM is fully painted first
     setTimeout(() => {
@@ -549,5 +613,240 @@ function closePopup() {
         const custInput = document.getElementById("customerName");
         if (custInput) custInput.value = "";
     }, 300);
+  }
+}
+
+// ==================== RETURN LOGIC ====================
+let currentReturnOrder = null;
+let returnItemsData = []; 
+
+function openReturnModal() {
+  const backdrop = document.getElementById('return-backdrop');
+  const modal = document.getElementById('return-modal');
+  if (!backdrop || !modal) return;
+  backdrop.style.display = 'block';
+  modal.style.display = 'block';
+  document.getElementById('return-step-1').style.display = 'block';
+  document.getElementById('return-step-2').style.display = 'none';
+  document.getElementById('returnItemSku').value = '';
+  document.getElementById('return-orders-list').innerHTML = '';
+  setTimeout(() => document.getElementById('returnItemSku').focus(), 100);
+}
+
+function closeReturnModal() {
+  const backdrop = document.getElementById('return-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  const modal = document.getElementById('return-modal');
+  if (modal) modal.style.display = 'none';
+  currentReturnOrder = null;
+  returnItemsData = [];
+}
+
+function backToReturnSearch() {
+  document.getElementById('return-step-1').style.display = 'block';
+  document.getElementById('return-step-2').style.display = 'none';
+  currentReturnOrder = null;
+  returnItemsData = [];
+}
+
+async function searchReturnByOrderId() {
+  const rawOrderId = document.getElementById('returnItemSku').value.trim();
+  if (!rawOrderId) return;
+
+  // Clean the order ID (remove barcode start/stop chars like * and UI symbols like #)
+  let orderId = rawOrderId.replace(/[*#]/g, '').trim().toUpperCase();
+  const list = document.getElementById('return-orders-list');
+  list.innerHTML = '<div style="text-align:center; padding:10px;"><i class="fa-solid fa-spinner fa-spin"></i> Searching...</div>';
+
+  let cleanOrderId = orderId;
+  if (cleanOrderId && !cleanOrderId.startsWith('ORD-') && !cleanOrderId.startsWith('RET-')) {
+    cleanOrderId = 'ORD-' + cleanOrderId;
+  }
+
+  try {
+    const res = await fetch('/api/sales/order/' + encodeURIComponent(cleanOrderId));
+    if (!res.ok) throw new Error('Search failed');
+    const items = await res.json();
+    
+    if (items.length === 0) {
+      list.innerHTML = '<div style="color:#c62828; padding:10px;">❌ Order not found or no items available to return.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    
+    // Jump straight to step 2 with the loaded items
+    document.getElementById('return-step-1').style.display = 'none';
+    document.getElementById('return-step-2').style.display = 'block';
+    document.getElementById('return-order-title').textContent = 'Order ' + cleanOrderId;
+    
+    // Populate receipt data for reprinting
+    const orderDate = items.length > 0 && items[0].sale_date ? new Date(items[0].sale_date).toLocaleString() : '';
+    document.getElementById('return-order-date').textContent = orderDate;
+    
+    lastSaleData = {
+        order_id: cleanOrderId,
+        date: orderDate || new Date().toLocaleString(),
+        staff_name: items.length > 0 && items[0].staff_name ? items[0].staff_name : 'System',
+        customer_name: '', 
+        items: items.map(i => ({
+           name: i.product_name,
+           price: i.unit_price,
+           quantity: i.quantity,
+           pieces_per_packet: i.pieces_per_packet
+        })),
+        total: items.reduce((sum, i) => sum + (i.unit_price * i.quantity), 0).toFixed(2)
+    };
+
+    const reprintBtn = document.getElementById('btn-reprint-receipt');
+    if (reprintBtn) reprintBtn.style.display = 'inline-block';
+    
+    currentReturnOrder = cleanOrderId;
+    returnItemsData = items.map(i => ({
+      ...i,
+      return_quantity: 0
+    }));
+
+    renderReturnItems();
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = '<div style="color:#c62828; padding:10px;">❌ Error processing search.</div>';
+  }
+}
+
+function renderReturnItems() {
+  const container = document.getElementById('return-items-container');
+  container.innerHTML = '';
+
+  if (returnItemsData.length === 0) {
+    container.innerHTML = '<div>No items available to return in this order.</div>';
+    return;
+  }
+
+  returnItemsData.forEach(item => {
+    const imgUrl = item.image_url || 'https://via.placeholder.com/50?text=Item';
+    const row = document.createElement('div');
+    row.className = 'return-item-row';
+    
+    const ppp = (item.pieces_per_packet && parseInt(item.pieces_per_packet) > 1) ? parseInt(item.pieces_per_packet) : 24;
+ 
+    row.innerHTML = `
+      <div style="display:flex; align-items:center; gap:12px; flex:1;">
+        <img src="${imgUrl}" style="width:45px; height:45px; border-radius:8px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/45?text=Item'">
+        <div>
+          <div style="font-weight:700; font-size:14px; color:var(--text-main);">${item.product_name}</div>
+          <div style="font-size:12px; color:var(--text-muted);">Bought: ${formatFraction(item.quantity)} Pkts @ GH₵${item.unit_price.toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+        <div style="display:flex; align-items:center; gap:4px; background:var(--background-color); border:1px solid var(--border-color); border-radius:8px; padding:3px;">
+          <button style="border:none; background:transparent; width:30px; height:30px; cursor:pointer; font-weight:bold; color:#d32f2f;" onclick="updateReturnQty(${item.product_id}, -0.25, ${item.quantity})">-</button>
+          <span style="font-size:15px; font-weight:700; min-width:35px; text-align:center; color:var(--text-main);">${formatFraction(item.return_quantity)}</span>
+          <button style="border:none; background:transparent; width:30px; height:30px; cursor:pointer; font-weight:bold; color:#2e7d32;" onclick="updateReturnQty(${item.product_id}, 0.25, ${item.quantity})">+</button>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); font-weight: 500;">(Return ${Math.round(item.return_quantity * ppp)} pcs)</div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  updateReturnTotals();
+}
+
+function updateReturnQty(productId, change, maxQty) {
+  const item = returnItemsData.find(i => i.product_id === productId);
+  if (item) {
+    let newQty = item.return_quantity + change;
+    newQty = Math.round(newQty * 4) / 4; 
+    
+    if (newQty < 0) newQty = 0;
+    if (newQty > maxQty) {
+      newQty = maxQty;
+      alert('Cannot return more than purchased.');
+    }
+    item.return_quantity = newQty;
+    renderReturnItems();
+  }
+}
+
+function updateReturnTotals() {
+  const total = returnItemsData.reduce((sum, item) => sum + (item.return_quantity * item.unit_price), 0);
+  document.getElementById('return-refund-total').innerHTML = `GH<i class="fa-solid fa-cedi-sign"></i>${total.toFixed(2)}`;
+  
+  const btn = document.getElementById('processReturnBtn');
+  if (total > 0) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  }
+}
+
+async function processReturnSubmit() {
+  const staffId = document.getElementById('returnStaffSelect').value;
+  if (!staffId) {
+    alert('Please select a staff member to process this return.');
+    return;
+  }
+
+  const itemsToReturn = returnItemsData.filter(i => i.return_quantity > 0);
+  if (itemsToReturn.length === 0) return;
+
+  const btn = document.getElementById('processReturnBtn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/returns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        original_order_id: currentReturnOrder,
+        staff_id: parseInt(staffId),
+        items: itemsToReturn
+      })
+    });
+    
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Refund failed');
+
+    const staffName = document.getElementById('returnStaffSelect').options[document.getElementById('returnStaffSelect').selectedIndex].text;
+    const updatedTotal = returnItemsData.reduce((sum, item) => sum + ((item.quantity - item.return_quantity) * item.unit_price), 0);
+    
+    lastSaleData = {
+        order_id: data.return_order_id,
+        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+        staff_name: staffName,
+        customer_name: '',
+        action: 'Refund',
+        items: returnItemsData.map(item => ({
+           name: item.product_name,
+           price: item.unit_price,
+           quantity: (item.quantity - item.return_quantity),
+           pieces_per_packet: item.pieces_per_packet
+        })).filter(i => i.quantity > 0),
+        total: updatedTotal.toFixed(2)
+    };
+
+    closeReturnModal();
+
+    if (confirm(`✅ ${data.message}\nReturn Reference: ${data.return_order_id}\n\nWould you like to print the refund receipt?`)) {
+        setTimeout(() => {
+            printReceipt();
+        }, 300);
+    }
+    // Reload products so inventory quantities are updated
+    const products = await ProductAPI.getAll();
+    productsData = products || [];
+    renderProducts();
+
+  } catch (err) {
+    console.error(err);
+    alert('❌ Error: ' + err.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
   }
 }

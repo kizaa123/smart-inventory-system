@@ -7,6 +7,8 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="../styles.css">
+    <!-- Local Offline Barcode Generator -->
+    <script src="../barcode-gen.js"></script>
     <script src="../api-client.js"></script>
     <title>New Sale - POS</title>
     <style>
@@ -126,27 +128,12 @@
         }
         /* ===== Camera Barcode / QR Scanner ===== */
         .barcode-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
             margin-top: 8px;
             background: var(--card-bg, #f5f5f5);
-            border: 2px solid #7c3aed;
             border-radius: 10px;
             padding: 5px 8px 5px 12px;
             transition: box-shadow 0.2s;
-        }
-        .barcode-row:focus-within { box-shadow: 0 0 0 3px rgba(124,58,237,0.18); }
-        .barcode-row i.bc-icon { color: #7c3aed; font-size: 17px; flex-shrink: 0; }
-        .barcode-row input {
-            border: none; outline: none; background: transparent;
-            flex: 1; font-size: 14px; color: var(--text-main, #222);
-            min-width: 0;
-        }
-        .barcode-row input::placeholder { color: #aaa; }
-        .bc-badge {
-            font-size: 12px; font-weight: 600; padding: 3px 9px;
-            border-radius: 6px; white-space: nowrap; display: none;
+            position: relative;
         }
         .bc-badge.show { display: inline-block; }
         .bc-badge.ok  { background: #e8f5e9; color: #2e7d32; }
@@ -158,6 +145,8 @@
             background: linear-gradient(135deg, #7c3aed, #5b21b6);
             color: #fff;
             border: none;
+            position: absolute;
+            right: 10px;
             padding: 8px 13px;
             border-radius: 7px;
             font-size: 13px;
@@ -191,7 +180,8 @@
         }
         #qr-reader-cam {
             width: min(92vw, 420px);
-            border-radius: 18px;
+            height: 160px; /* Much flatter for barcodes */
+            border-radius: 12px;
             overflow: hidden;
             border: 3px solid #7c3aed;
             box-shadow: 0 0 0 7px rgba(124,58,237,0.2), 0 10px 50px rgba(0,0,0,0.7);
@@ -278,11 +268,6 @@
 
             <!-- Dual barcode row: type barcode OR scan with camera -->
             <div class="barcode-row">
-              <i class="fa-solid fa-barcode bc-icon"></i>
-              <input type="text" id="barcodeInput"
-                     placeholder="Type / paste barcode then press Enter"
-                     autocomplete="off" spellcheck="false">
-              <span class="bc-badge" id="bcBadge"></span>
               <button class="scan-barcode-btn" onclick="openCamScanner()" title="Scan with camera">
                 <i class="fa-solid fa-camera"></i> Scan
               </button>
@@ -303,7 +288,10 @@
         <div class="pos-right">
           <div class="cart-header">
             <h2>Current Order</h2>
-            <button class="clear-cart-btn" onclick="clearCart()" title="Clear Cart"><i class="fa-solid fa-trash-can"></i></button>
+            <div style="display: flex; gap: 8px;">
+              <button class="clear-cart-btn" onclick="openReturnModal()" title="Process Return" style="border: 1px solid #c62828; width: auto; padding: 5px 10px; font-size: 15px; font-weight: bold;">Return Order</button>
+              <button class="clear-cart-btn" onclick="clearCart()" title="Clear Cart"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
           </div>
 
           <div class="cart-items" id="cartItemsContainer">
@@ -395,7 +383,7 @@
           
           <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
               <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Order Number</div>
-              <div id="successOrderId" style="font-size: 24px; font-weight: 800; color: #2e7d32; margin-bottom: 15px;">#ORD-XXXXXX</div>
+              <div id="successOrderId" style="font-size: 24px; font-weight: 800; color: #2e7d32; margin-bottom: 15px;">ORD-XXXXXX</div>
               
               <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Total Amount Paid</div>
               <div id="successAmount" style="font-size: 24px; font-weight: 800; color: #1565c0;">GH₵0.00</div>
@@ -420,6 +408,7 @@
           <div class="receipt-row"><strong>Date/Time:</strong> <span id="print-date"></span></div>
           <div class="receipt-row"><strong>Server:</strong> <span id="print-server"></span></div>
           <div id="print-customer-row" class="receipt-row" style="display: none;"><strong>Customer:</strong> <span id="print-customer"></span></div>
+          <div id="print-action-row" class="receipt-row" style="display: none; color: #c62828;"><strong>Action:</strong> <span id="print-action"></span></div>
       </div>
 
       <table class="receipt-items">
@@ -440,8 +429,66 @@
               <span>TOTAL PAID:</span>
               <span id="print-total" style="color: #1565c0;"></span>
           </div>
-          <p style="text-align: center; margin-top: 20px; font-style: italic; font-size: 10px;">Thank you for shopping with us!</p>
+      
+      <!-- Better organized barcode section -->
+      <div style="text-align: center; margin-top: 15px; border-top: 1px dashed #ddd; padding-top: 10px;">
+          <div id="print-barcode" style="margin: 5px 0; display: flex; justify-content: center;"></div>
+          <div id="print-order-id-footer" style="font-size: 11px; font-weight: 700; color: #333;"></div>
       </div>
+
+      <p style="text-align: center; margin-top: 10px; font-style: italic; font-size: 10px;">Thank you for shopping with us!</p>
+    </div>
+  </div>
+
+  <!-- Return Modal -->
+  <div id="return-backdrop" class="return-backdrop" onclick="closeReturnModal()"></div>
+  <div id="return-modal" class="return-modal-container">
+      <h2 style="margin-top:0; display:flex; align-items:center;">Process Return</h2>
+      
+      <!-- Step 1 -->
+      <div id="return-step-1">
+          <p style="color:var(--text-muted); margin-bottom:15px; font-size:14px;">Enter the exact Order ID (e.g., ORD-XXXXXX) to process a return.</p>
+          <div class="return-input-group">
+              <input type="text" id="returnItemSku" placeholder="Enter Order ID..." onkeydown="if(event.key==='Enter') searchReturnByOrderId()">
+              <button onclick="openCamScanner('returnItemSku', true)" class="return-btn-icon" title="Scan Order Barcode/QR"><i class="fa-solid fa-camera"></i></button>
+              <button onclick="searchReturnByOrderId()" class="return-btn-search"><i class="fa-solid fa-search"></i></button>
+          </div>
+          <div id="return-orders-list" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Errors pop up here -->
+          </div>
+      </div>
+ 
+      <!-- Step 2 -->
+      <div id="return-step-2" style="display:none;">
+          <button onclick="backToReturnSearch()" style="background:transparent; border:none; color:var(--accent-color); cursor:pointer; padding:0; margin-bottom:15px; font-weight:bold; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                  <h3 style="margin:0; color:var(--text-main);" id="return-order-title">Order #...</h3>
+                  <button onclick="printReceipt()" style="background:#5c5c5c; color:#fff; border:none; padding:4px 10px; border-radius:5px; cursor:pointer; font-size:12px; font-weight:bold; display:none;" id="btn-reprint-receipt" title="Print a copy of this past receipt"><i class="fa-solid fa-print"></i> Reprint</button>
+              </div>
+              <span id="return-order-date" style="font-size:12px; color:var(--text-muted);"></span>
+          </div>
+          
+          <div id="return-items-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px; border-top:1px solid var(--border-color); padding-top:15px;">
+              <!-- Items showing + / - buttons to adjust return quantity -->
+          </div>
+ 
+          <div class="refund-summary-box">
+              <span>Refund Total:</span>
+              <span id="return-refund-total">GH<i class="fa-solid fa-cedi-sign"></i>0.00</span>
+          </div>
+ 
+          <div style="margin-bottom: 20px;">
+              <select id="returnStaffSelect" class="return-staff-select">
+                  <option value="">Select Staff Member</option>
+              </select>
+          </div>
+ 
+          <button onclick="processReturnSubmit()" id="processReturnBtn" style="width:100%; padding:14px; background:linear-gradient(135deg, #c62828, #b71c1c); color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; box-shadow:0 4px 15px rgba(198,40,40,0.3); transition:transform 0.1s;"><i class="fa-solid fa-check"></i> Complete Refund</button>
+      </div>
+ 
+      <button class="return-close-btn" onclick="closeReturnModal()"><i class="fa-solid fa-xmark"></i></button>
   </div>
 
 <!-- Modal for recent activities -->

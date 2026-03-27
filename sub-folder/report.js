@@ -141,15 +141,22 @@ function updateTable(data) {
         const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
         
         const staffName = sale.staff_name || 'Unknown';
+        const isReturn = sale.quantity < 0 || sale.order_id.startsWith('RET-');
+        const displayQty = Math.abs(sale.quantity);
+        const displayTotal = Math.abs(sale.total_amount);
 
         const row = document.createElement('tr');
+
         row.innerHTML = `
             <td>${formattedDate}</td>
-            <td style="color: #2e7d32; font-weight: 700;">#${sale.order_id}</td>
-            <td>${sale.product_name || 'Unknown'}</td>
+            <td style="color: #2e7d32; font-weight: 700;">${sale.order_id}</td>
+            <td>
+                ${sale.product_name || 'Unknown'}
+                ${isReturn ? '<span style="color: #ee0800; font-size: 11px; font-weight: 800; border: 1px solid #ee0800; padding: 1px 4px; border-radius: 4px; margin-left: 8px; vertical-align: middle;">REFUND</span>' : ''}
+            </td>
             <td>${sale.category_name || 'Uncategorized'}</td>
-            <td>${sale.quantity}</td>
-            <td style="font-weight: 700; color: #1565c0;">GH₵${sale.total_amount.toFixed(2)}</td>
+            <td>${displayQty}</td>
+            <td style="font-weight: 700; color: #1565c0;">GH₵${displayTotal.toFixed(2)}</td>
             <td>${staffName}</td>
         `;
         tbody.appendChild(row);
@@ -357,11 +364,14 @@ function exportToCSV() {
             const mm = String(date.getMinutes()).padStart(2, '0');
             const dateStr = `"${YYYY}-${MM}-${DD} ${HH}:${mm}"`;
             
-            const pName = `"${(sale.product_name || '').replace(/"/g, '""')}"`;
+            const isReturn = sale.quantity < 0 || sale.order_id.startsWith('RET-');
+            const displayQty = Math.abs(sale.quantity);
+            const displayTotal = Math.abs(sale.total_amount);
+            const pName = `"${((sale.product_name || '') + (isReturn ? ' (Refund)' : '')).replace(/"/g, '""')}"`;
             const cName = `"${(sale.category_name || '').replace(/"/g, '""')}"`;
             const sName = `"${sale.staff_name || ''}"`.trim();
             
-            return `${dateStr},${sale.order_id},${pName},${cName},${sale.quantity},${sale.total_amount.toFixed(2)},${sName}`;
+            return `${dateStr},${sale.order_id},${pName},${cName},${displayQty},${displayTotal.toFixed(2)},${sName}`;
         }).join("\n");
 
     const encodedUri = encodeURI(csvContent);

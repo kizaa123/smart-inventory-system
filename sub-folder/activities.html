@@ -31,13 +31,20 @@
         }
         .invisible-table th, .invisible-table td {
             padding: 15px 20px;
-            text-align: left;
+            text-align: center;
             border: none; /* Invisible borders */
         }
+
         .invisible-table th {
             background-color: #2f0464;
             color: rgb(8, 8, 8);
-            font-weight: 600;
+            font-weight: 500;
+        }
+        .invisible-table td:nth-child(3){
+            font-weight: 500;
+        }
+         .invisible-table td:nth-child(4){
+            font-weight: 400;
         }
         .invisible-table tr {
             border-bottom: 1px solid #f0f0f0;
@@ -170,7 +177,7 @@
                     <tr>
                         <th style="width: 80px;">ID</th>
                         <th style="width: 200px;">Type</th>
-                        <th style="width: auto;">Activity Description</th>
+                        <th style="width: 700px;">Activity Description</th>
                         <th style="width: 200px;">Date & Time</th>
                         <th style="width: 80px;">Action</th>
                     </tr>

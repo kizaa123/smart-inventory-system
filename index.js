@@ -7,12 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-const modalContent = document.getElementById('modal-content');
-if (modalContent) {
-  modalContent.classList.add('active');
-  modalContent.classList.remove('remove-transition');
-}
-
 // Track already notified low stock products to avoid spam
 let notifiedLowStockIds = new Set();
 
@@ -173,12 +167,12 @@ function renderSalesChart(hourlyToday, hourlyYesterday) {
   // Map backend results to slots
   hourlyToday.forEach(item => {
     const hr = parseInt(item.hour);
-    if (hr >= 0 && hr < 24) todayData[hr] = item.total;
+    if (hr >= 0 && hr < 24) todayData[hr] = Math.max(0, parseFloat(item.total));
   });
 
   hourlyYesterday.forEach(item => {
     const hr = parseInt(item.hour);
-    if (hr >= 0 && hr < 24) yesterdayData[hr] = item.total;
+    if (hr >= 0 && hr < 24) yesterdayData[hr] = Math.max(0, parseFloat(item.total));
   });
 
   // Check if chart already exists and destroy it to avoid overlap
@@ -312,7 +306,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           recentActivity.forEach(activity => {
             const dateObj = new Date(activity.created_at);
-            const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            const seconds = Math.floor((new Date() - dateObj) / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            let formattedDate = 'Just now';
+            if (seconds >= 60) {
+                if (minutes < 60) formattedDate = `${minutes}m ago`;
+                else if (hours < 24) formattedDate = `${hours}h ago`;
+                else if (days < 7) formattedDate = `${days}d ago`;
+                else {
+                    const isThisYear = new Date().getFullYear() === dateObj.getFullYear();
+                    const month = dateObj.toLocaleString('default', { month: 'short' });
+                    formattedDate = isThisYear ? `${month} ${dateObj.getDate()}` : `${month} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+                }
+            }
             
             let icon = 'fa-info-circle';
             let color = '#777';

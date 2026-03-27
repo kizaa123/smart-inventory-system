@@ -421,6 +421,141 @@ app.post('/api/sales', (req, res) => {
   });
 });
 
+// GET recent sales containing a specific product by SKU
+app.get('/api/sales/by-sku/:sku', (req, res) => {
+  const { sku } = req.params;
+  db.query(`
+    SELECT DISTINCT s.order_id, MAX(s.sale_date) as sale_date, p.name as product_name 
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE p.sku = ? AND s.quantity > 0
+    GROUP BY s.order_id, p.name
+    ORDER BY sale_date DESC LIMIT 10
+  `, [sku], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// GET order details by Order ID
+app.get('/api/sales/order/:order_id', (req, res) => {
+  const { order_id } = req.params;
+  db.query(`
+    SELECT s.product_id, s.quantity, s.unit_price, s.total_amount, s.sale_date, 
+           p.name as product_name, p.image_url, p.sku, p.pieces_per_packet,
+           st.name as staff_name
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    LEFT JOIN staff st ON s.staff_id = st.id
+    WHERE s.order_id = ? AND s.quantity > 0
+  `, [order_id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// GET currently online users (Publicly accessible for the sidebar)
+app.get('/api/users/active', (req, res) => {
+  db.query(`
+    SELECT username, profile_image, role,
+           (is_online = 1 AND datetime(last_seen, '+3 minutes') >= datetime('now')) as calculated_online
+    FROM users 
+    WHERE calculated_online = 1
+    ORDER BY username
+  `, (err, rows) => {
+    if (err) res.status(500).json({ error: err.message });
+    else {
+      res.json(rows);
+    }
+  });
+});
+
+// POST process return
+app.post('/api/returns', (req, res) => {
+  const { original_order_id, staff_id, items } = req.body;
+  
+  if (!original_order_id || !items) {
+    return res.status(400).json({ error: 'Missing required fields for return' });
+  }
+
+  const validItems = items.filter(i => i.return_quantity > 0);
+  if (validItems.length === 0) {
+    return res.status(400).json({ error: 'No items to return' });
+  }
+
+  const return_order_id = 'RET-' + original_order_id;
+
+  // Fetch the original sale date to ensure returns are synced in the dashboard chart
+  db.query('SELECT sale_date FROM sales WHERE order_id = ? LIMIT 1', [original_order_id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    // Fallback to null if order not found, database default will be CURRENT_TIMESTAMP
+    const original_sale_date = rows.length > 0 ? rows[0].sale_date : null;
+
+    db.beginTransaction(err => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      let errorCount = 0;
+      let completedCount = 0;
+      const totalOperations = validItems.length * 2;
+
+      const checkCompletion = () => {
+        completedCount++;
+        if (completedCount === totalOperations) {
+          if (errorCount > 0) {
+            db.rollback(() => {
+              res.status(500).json({ error: 'Failed to process return' });
+            });
+          } else {
+            db.commit(err => {
+              if (err) {
+                return db.rollback(() => {
+                  res.status(500).json({ error: err.message });
+                });
+              }
+              const totalItemsReturned = validItems.reduce((sum, item) => sum + item.return_quantity, 0);
+              const totalRefundAmount = validItems.reduce((sum, item) => sum + (item.return_quantity * item.unit_price), 0);
+              logActivity('SALE', `Processed return: ${totalItemsReturned} items refunded for GH₵${totalRefundAmount.toFixed(2)} (Ref: ${return_order_id})`);
+              res.json({ message: 'Return processed successfully', return_order_id });
+            });
+          }
+        }
+      };
+
+      validItems.forEach(item => {
+        const refundAmount = item.return_quantity * item.unit_price;
+        const insertQuery = original_sale_date 
+          ? 'INSERT INTO sales (order_id, product_id, quantity, unit_price, total_amount, staff_id, sale_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+          : 'INSERT INTO sales (order_id, product_id, quantity, unit_price, total_amount, staff_id) VALUES (?, ?, ?, ?, ?, ?)';
+        
+        const insertParams = original_sale_date 
+          ? [return_order_id, item.product_id, -item.return_quantity, item.unit_price, -refundAmount, staff_id, original_sale_date]
+          : [return_order_id, item.product_id, -item.return_quantity, item.unit_price, -refundAmount, staff_id];
+
+        db.query(insertQuery, insertParams, (err) => {
+          if (err) {
+            console.error('Insert return sale error:', err);
+            errorCount++;
+          }
+          checkCompletion();
+        });
+        
+        db.query(
+          'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
+          [item.return_quantity, item.product_id],
+          (err) => {
+            if (err) {
+              console.error('Update stock error on return:', err);
+              errorCount++;
+            }
+            checkCompletion();
+          }
+        );
+      });
+    });
+  });
+});
+
 // ==================== DASHBOARD ENDPOINTS ====================
 
 // Auth Endpoints
@@ -448,31 +583,38 @@ app.post('/api/login', (req, res) => {
     }
 
     if (selectedRole === 'staff' && staffId) {
-      db.query('SELECT name, position FROM staff WHERE id = ?', [staffId], (sErr, sRows) => {
+      db.query('SELECT name, position, image_url FROM staff WHERE id = ?', [staffId], (sErr, sRows) => {
+        let staffProfile = null;
         if (!sErr && sRows.length > 0) {
-          const staffProfile = sRows[0];
-          user.staff_id = staffId;
-          user.staff_name = staffProfile.name;
-          user.staff_position = staffProfile.position;
-          logActivity('STAFF', `${staffProfile.name} (${staffProfile.position}) has login to the system`);
+          staffProfile = sRows[0];
+          logActivity('STAFF', `${staffProfile.name} (${staffProfile.position}) logged in to the system`);
         } else {
-          logActivity('STAFF', `${user.username} (${user.role}) has login to the system`);
+          logActivity('STAFF', `${user.username} (${user.role}) logged in to the system`);
         }
+
+        // Set user as online
+        db.query('UPDATE users SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
+
+        const responseUser = {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          profile_image: user.profile_image || '',
+          staff_id: staffId,
+          staff_name: staffProfile ? staffProfile.name : user.username,
+          staff_position: staffProfile ? staffProfile.position : 'Staff',
+          staff_image: (staffProfile && staffProfile.image_url) ? staffProfile.image_url : ''
+        };
+
         res.json({
           success: true,
-          user: {
-            id: user.id,
-            username: user.username,
-            role: user.role,
-            profile_image: user.profile_image,
-            staff_id: user.staff_id,
-            staff_name: user.staff_name,
-            staff_position: user.staff_position
-          }
+          user: responseUser
         });
       });
     } else {
-      logActivity('STAFF', `${user.username} (${user.role}) has login to the system`);
+      logActivity('STAFF', `${user.username} (${user.role}) logged in to the system`);
+      // Set user as online
+      db.query('UPDATE users SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
       res.json({
         success: true,
         user: {
@@ -484,6 +626,45 @@ app.post('/api/login', (req, res) => {
       });
     }
   });
+});
+
+// Logout Endpoint
+app.post('/api/logout', (req, res) => {
+  const { userId } = req.body;
+  if (userId) {
+    db.query('UPDATE users SET is_online = 0 WHERE id = ?', [userId], (err) => {
+      if (err) console.error('Logout status update error:', err);
+      res.json({ success: true });
+    });
+  } else {
+    res.json({ success: true });
+  }
+});
+
+// Heartbeat Endpoint
+app.post('/api/users/heartbeat', (req, res) => {
+  const { userId } = req.body;
+  if (userId) {
+    db.query('UPDATE users SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?', [userId], (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else {
+        res.json({ success: true });
+      }
+    });
+  } else {
+    res.status(400).json({ error: 'User ID required' });
+  }
+});
+
+// Notifications/Activity Logging Endpoint
+app.post('/api/notifications', (req, res) => {
+  const { type, description } = req.body;
+  if (!type || !description) {
+    return res.status(400).json({ error: 'Type and description are required' });
+  }
+  logActivity(type, description);
+  res.json({ success: true });
 });
 
 app.post('/api/users/profile-image', (req, res) => {
@@ -500,9 +681,22 @@ app.post('/api/users/profile-image', (req, res) => {
 
 // GET all users (Admin only)
 app.get('/api/users', (req, res) => {
-  db.query('SELECT id, username, role, profile_image, created_at FROM users ORDER BY username', (err, rows) => {
+  // Return is_online based on either the explicit flag OR a last_seen within 3 minutes
+  db.query(`
+    SELECT id, username, role, profile_image, created_at, 
+           (is_online = 1 AND datetime(last_seen, '+3 minutes') >= datetime('now')) as calculated_online
+    FROM users 
+    ORDER BY username
+  `, (err, rows) => {
     if (err) res.status(500).json({ error: err.message });
-    else res.json(rows);
+    else {
+      // Map the calculated field to is_online for the frontend
+      const users = rows.map(u => ({
+        ...u,
+        is_online: !!u.calculated_online
+      }));
+      res.json(users);
+    }
   });
 });
 
@@ -769,6 +963,15 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start server
+// POST generic notification
+app.post('/api/notifications', (req, res) => {
+  const { type, description } = req.body;
+  if (!type || !description) return res.status(400).json({ error: 'Missing type or description' });
+  
+  logActivity(type, description);
+  res.json({ success: true });
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Stockmaster API running on http://localhost:${PORT} (SQLite Mode)`);
   console.log(`📝 Make sure to run: node init-db.js once to setup tables.`);

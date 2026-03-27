@@ -24,7 +24,22 @@ async function loadAllActivities() {
 
         activities.forEach(activity => {
             const dateObj = new Date(activity.created_at);
-            const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            const seconds = Math.floor((new Date() - dateObj) / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            let formattedDate = 'Just now';
+            if (seconds >= 60) {
+                if (minutes < 60) formattedDate = `${minutes}m ago`;
+                else if (hours < 24) formattedDate = `${hours}h ago`;
+                else if (days < 7) formattedDate = `${days}d ago`;
+                else {
+                    const isThisYear = new Date().getFullYear() === dateObj.getFullYear();
+                    const month = dateObj.toLocaleString('default', { month: 'short' });
+                    formattedDate = isThisYear ? `${month} ${dateObj.getDate()}` : `${month} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+                }
+            }
             
             const badgeClass = `badge-${activity.type.toLowerCase()}`;
             
@@ -36,7 +51,7 @@ async function loadAllActivities() {
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="color: #2e7d32; font-weight: 700;">#${activity.id}</td>
+                <td style="color: #2e7d32; font-weight: 600;">#${activity.id}</td>
                 <td><span class="activity-type-badge ${badgeClass}">${activity.type}</span></td>
                 <td>${description}</td>
                 <td>${formattedDate}</td>
